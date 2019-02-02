@@ -19,7 +19,7 @@ In this thesis I learn about the basics of SLAM algorithm and the differents app
 After that, since this is a problem using an RGBD camera, I started reading the TFM of **Alberto Martín** [Autolocalización visual 3D usando mapas
 RTAB-Map](https://gsyc.urjc.es/jmplaza/students/tfm-visualslam-alberto_martin-2017.pdf).
 
-### Step 3
 In this project the SLAM problem is attacked using a pre-generated 3D map of the environment and using a RGB image to get the location in this map. Also RTAB-map tool is used to generate the 3D map.
 
+### Step 3
 Finally I proceed to the installation of the [SD-SLAM](https://github.com/JdeRobot/slam-SD-SLAM) software of the JdeRobot group.
