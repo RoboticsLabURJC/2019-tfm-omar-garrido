@@ -5,6 +5,7 @@ This TFM aims to obtain a SLAM algorithm using a RGBD sensor like realsense D435
 ## Index
 
 - [Week 1-4 Reading State of the Art SLAM Papers](#week1)
+- [Week 5-6 Realsense D435 and SLAM using RGBD sensors](#week2)
 
 
 <a name="week1"></a>
@@ -23,3 +24,13 @@ In this project the SLAM problem is attacked using a pre-generated 3D map of the
 
 ### Step 3
 Finally I proceed to the installation of the [SD-SLAM](https://github.com/JdeRobot/slam-SD-SLAM) software of the JdeRobot group.
+
+
+<a name="week2"></a>
+## Week 5-6 Realsense D435 and SLAM using RGBD sensors
+
+### Step 1 
+Start working with the realsense D435 RGBD sensor. Get it to work on SD-SLAM. Recieve and visualize information from the sensor.
+
+### Step 2
+Search information related to the SLAM problem using RGBD sensors.
