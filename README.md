@@ -38,6 +38,6 @@ Proceed to the installation of ROS-kinetics. Since I have Ubuntu 18 and ROS-Kine
 Search information related to the SLAM problem using RGBD sensors. There is not too much documents related to SLAM using only depth sensor information, but a lot about RGBD (visual SLAM, using feature extraction on the RGB image and then using the depth information for those features in order to improve the visual SLAM algorithms).
 
 But I found some articles that seems interesting and talk about the SLAM from point of view of depth information:
-- Depth Camera Based Indoor Mobile Robot Localization and Navigation (RANSAC on the point cloud to find planes on the 3D environment)
-- 3D pose estimation and mapping with time-of-flight cameras (Uses RGBD but also has information and problems of the TOF sensors)
-- Direct Depth SLAM (the same approach that we are trying to make here)
+- **Depth Camera Based Indoor Mobile Robot Localization and Navigation** (RANSAC on the point cloud to find planes on the 3D environment)
+- **3D pose estimation and mapping with time-of-flight cameras** (Uses RGBD but also has information and problems of the TOF sensors)
+- **Direct Depth SLAM** (the same approach that we are trying to make here)
