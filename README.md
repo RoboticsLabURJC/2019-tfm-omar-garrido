@@ -27,10 +27,17 @@ Finally I proceed to the installation of the [SD-SLAM](https://github.com/JdeRob
 
 
 <a name="week2"></a>
-## Week 5-6 Realsense D435 and SLAM using RGBD sensors
+## Week 5-7 Realsense D435 and SLAM using RGBD sensors
 
 ### Step 1 
 Start working with the realsense D435 RGBD sensor. Get it to work on SD-SLAM. Recieve and visualize information from the sensor.
+Proceed to the installation of ROS-kinetics. Since I have Ubuntu 18 and ROS-Kinetics is only available for Ubuntu 16, I had to reinstall everything on Ubuntu 16.
+
 
 ### Step 2
-Search information related to the SLAM problem using RGBD sensors.
+Search information related to the SLAM problem using RGBD sensors. There is not too much documents related to SLAM using only depth sensor information, but a lot about RGBD (visual SLAM, using feature extraction on the RGB image and then using the depth information for those features in order to improve the visual SLAM algorithms).
+
+But I found some articles that seems interesting and talk about the SLAM from point of view of depth information:
+- Depth Camera Based Indoor Mobile Robot Localization and Navigation (RANSAC on the point cloud to find planes on the 3D environment)
+- 3D pose estimation and mapping with time-of-flight cameras (Uses RGBD but also has information and problems of the TOF sensors)
+- Direct Depth SLAM (the same approach that we are trying to make here)
