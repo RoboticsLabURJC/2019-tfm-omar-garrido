@@ -30,8 +30,11 @@ Finally I proceed to the installation of the [SD-SLAM](https://github.com/JdeRob
 ## Week 5-7 Realsense D435 and SLAM using RGBD sensors
 
 ### Step 1 
-Start working with the realsense D435 RGBD sensor. Get it to work on SD-SLAM. Recieve and visualize information from the sensor.
 Proceed to the installation of ROS-kinetics. Since I have Ubuntu 18 and ROS-Kinetics is only available for Ubuntu 16, I had to reinstall everything on Ubuntu 16.
+
+Learn about ROS platform, filesystem (rosbag), ROS Computation Graph Level (similar to microservices architecture), and start testing the ROS executables examples from that comes with SD-SLAM.
+
+Start working with the realsense D435 RGBD sensor. Create a simple program that reads information from the realsense and shows it on a window (PyQt + ROS)
 
 
 ### Step 2
