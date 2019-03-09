@@ -47,4 +47,4 @@ But I found some articles that seems interesting and talk about the SLAM from po
 - **3D pose estimation and mapping with time-of-flight cameras** (Uses RGBD but also has information and problems of the TOF sensors)
 - **Direct Depth SLAM** (the same approach that we are trying to make here)
 
-Afterreading Direct Depth SLAM, Ive found a lot of techniques such as *range flow constrain equation*, *ICP* and more that Ill try to understand and read more about to be able to implement them and evaluate their performance.
+After reading Direct Depth SLAM, Ive found a lot of techniques such as *range flow constrain equation*, *ICP* and more that Ill try to understand and read more about to be able to implement them and evaluate their performance.
