@@ -7,7 +7,7 @@ This TFM aims to obtain a SLAM algorithm using a RGBD sensor like realsense D435
 - [Week 1-4 Reading State of the Art SLAM Papers](#week1)
 - [Week 5-7 Realsense D435 and SLAM using RGBD sensors](#week2)
 - [Week 8-9 Realsense D435 problems](#week3)
-- [Week 10-11 Realsense D435 problems 2 and Range Flow Constrain](#week4)
+- [Week 10-11 Realsense D435 problems fixed and Range Flow Constrain](#week4)
 
 
 <a name="week1"></a>
@@ -66,7 +66,7 @@ What I found on Windows 10 was that the problem was there too. So is probably no
 Conclusion: I see a few people on github with similar problems. After all this test I can almost assure that this is probably a hardware related problem and not a software problem. Probably a problem with the USB cable, having not enough bandwidth for example, or a problem with my 3.0 USB, since my  motherboard has an old USB 3.0 but I also have a USB 3.0 expansion PCIe card, so there should not be a problem with that. The last thing that comes to my mind is the camera itself, but since the problems seen are bandwith related I guess I can discard this.
 
 <a name="week4"></a>
-## Week 10-11 Realsense D435 problems 2 and Range Flow Constrain.
+## Week 10-11 Realsense D435 problems fixed and Range Flow Constrain.
 After I get my hands on a borrowed laptop that had a USB 3.0, i could verify that the problems with the realsense D435 where due to my computer, since on that laptop the realsense-viewer app could work on all resolutions at 30 fps without problems.
 
 
