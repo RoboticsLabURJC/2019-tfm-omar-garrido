@@ -6,7 +6,8 @@ This TFM aims to obtain a SLAM algorithm using a RGBD sensor like realsense D435
 
 - [Week 1-4 Reading State of the Art SLAM Papers](#week1)
 - [Week 5-7 Realsense D435 and SLAM using RGBD sensors](#week2)
-- [Week 8-9 Realsense D435 problems](#week2)
+- [Week 8-9 Realsense D435 problems](#week3)
+- [Week 10-11 Realsense D435 problems 2 and Range Flow Constrain](#week4)
 
 
 <a name="week1"></a>
@@ -51,7 +52,7 @@ But I found some articles that seems interesting and talk about the SLAM from po
 After reading Direct Depth SLAM, Ive found a lot of techniques such as *range flow constrain equation*, *ICP* and more that Ill try to understand and read more about to be able to implement them and evaluate their performance.
 
 
-<a name="week2"></a>
+<a name="week3"></a>
 ## Week 8-9 Realsense D435 problems.
 Since the Realsense D435 wasnt working properly using the realsense-realview application I try to figure out what was the problem.
 
@@ -63,3 +64,9 @@ What I found on Windows 10 was that the problem was there too. So is probably no
 - Also looking in github I found that the USB type C that connects to the realsense also give some errors to some people and they fix it by inserting the usb to the realsense turning it, since a type C USB can be inserted in both sides. What I found is that on one side the realsense camera is detected as USB 2.0, allowing to record on low resolutions but stable. On the other side of the usb, the camera was detected as USB 3.0, allowing lots of configurations but once the streaming start it will fail and freeze the camera. Same problem in linux but the camera was always detected as USB 3.0 but on one side fewer configurations where allowed. The realsense-viewer application seems more stable on windows anyways as I can record on a resolution of 640x480 at 30 fps without problem with the camera as USB 2.0.
 
 Conclusion: I see a few people on github with similar problems. After all this test I can almost assure that this is probably a hardware related problem and not a software problem. Probably a problem with the USB cable, having not enough bandwidth for example, or a problem with my 3.0 USB, since my  motherboard has an old USB 3.0 but I also have a USB 3.0 expansion PCIe card, so there should not be a problem with that. The last thing that comes to my mind is the camera itself, but since the problems seen are bandwith related I guess I can discard this.
+
+<a name="week4"></a>
+## Week 10-11 Realsense D435 problems 2 and Range Flow Constrain.
+After I get my hands on a borrowed laptop that had a USB 3.0, i could verify that the problems with the realsense D435 where due to my computer, since on that laptop the realsense-viewer app could work on all resolutions at 30 fps without problems.
+
+
