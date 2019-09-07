@@ -1,0 +1,14 @@
+<a name="entry4"></a>
+## Week 10-11 Realsense D435 problems fixed and Range Flow Constrain.
+After I get my hands on a borrowed laptop that had a USB 3.0, i could verify that the problems with the realsense D435 where due to my computer, since on that laptop the realsense-viewer app could work on all resolutions at 30 fps without problems.
+
+Update: Since I had to reinstall the realsense 2.0 SDK since the lastest version available dont have a ros wrapper yet, this time I compiled version 2.19.0 from source code since the apt version was already 2.19.2. Then I installed again the realsense ros wrapper version 2.2.1 compatible with realsense SDK 2.19.0.
+After this I could record at 1080p at 30-60fps using the realsense-viewer, maybe because of the version of both SDKs or maybe because I install the realsense SDK from source. The thing is now the camera is working.
+
+The objective was to understand and implement the range flow constrain algorithm. After reading the Direct Depth SLAM paper, I couldnt fully understand the algorithm so I tried reading some of the refereces in the paper. Still I have to read more to fully understand it.
+
+Also I try to implement a python script that reads subscribes to one of the topics the realsense publish to when doing:
+roslaunch realsense2_camera rs_camera.launch 
+Still working on it.
+
+
