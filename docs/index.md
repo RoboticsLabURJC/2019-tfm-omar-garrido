@@ -1,4 +1,4 @@
-# 2019-tfm-omar-garrido
+# Omar Garrido TFM 2019
 
 This TFM aims to obtain a SLAM algorithm using a RGBD sensor like realsense D435 for a drone, in order to get the location of the drone in the environment and a dense mapping of the environment.
 
