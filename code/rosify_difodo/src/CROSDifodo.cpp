@@ -47,31 +47,51 @@ CROSDifodo::CROSDifodo() : mrpt::vision::CDifodo() {
     last_execution_time = (double) cv::getTickCount();
 }
 
-void CROSDifodo::loadConfiguration(/*const mrpt::config::CConfigFileBase& ini*/) {
+void CROSDifodo::loadConfiguration() {
     /*********************VALUES THAT WILL BE RETRIEVED BY A .LAUNCH OR CONFIG FILE*********************/
-    input_depth_topic = "/camera/depth/image_rect_raw";
-    output_odom_topic = "/difodo/odometry";
+    // This method returns false if the value couldn be found, but we already have the default values in the constructor
+    // so no need to check for it
+    ros::param::get("/input_depth_topic", input_depth_topic);
+    ros::param::get("/output_odom_topic", output_odom_topic);
 
-    rows_orig = 480;
-    cols_orig = 640;
+    ros::param::get("/rows_orig", rows_orig);
+    ros::param::get("/cols_orig", cols_orig);
 
-    downsample = 4;
+    int aux; // This is needed since get only works with integer (int32) references and not any other uint or uint_16...
+    ros::param::get("/downsample", aux);
+    downsample = aux;
 
-    camera_fps = 30;
-    objective_fps = 10;
+    ros::param::get("/camera_fps", camera_fps);
+    ros::param::get("/objective_fps", objective_fps);
 
     // Controls the number of messages per second we want to send.
     loop_rate = new ros::Rate(objective_fps);
 
-    ctf_levels = 5;
+    ros::param::get("/ctf_levels", aux);
+    ctf_levels = aux;
 
     rows_ctf = rows_orig / downsample;
     cols_ctf = cols_orig / downsample;
 
-    fovh_degrees = 74.0f; //58.6f; //62.5 (Difodometry-Datasets)
-    fovv_degrees = 62.0f; //48.5 (Difodometry-Datasets)
+    ros::param::get("/fovh_degrees", fovh_degrees);
+    ros::param::get("/fovv_degrees", fovv_degrees);
 
-    fast_pyramid = false;
+    ros::param::get("/fast_pyramid", fast_pyramid);
+
+    ROS_INFO_STREAM("---------------------------------------------------------" << std::endl <<
+                         "             CONFIGURATION PARAMETERS LOADED" << std::endl <<
+                         "---------------------------------------------------------" << std::endl <<
+                         "input_depth_topic: " << input_depth_topic << std::endl <<
+                         "output_odom_topic: " << output_odom_topic << std::endl <<
+                         "rows_orig: " << rows_orig << std::endl <<
+                         "cols_orig: " << cols_orig << std::endl <<
+                         "downsample: " << downsample << std::endl <<
+                         "camera_fps: " << camera_fps << std::endl <<
+                         "objective_fps: " << objective_fps << std::endl <<
+                         "ctf_levels " << ctf_levels << std::endl <<
+                         "fovh_degrees: " << fovh_degrees << std::endl <<
+                         "fovv_degrees: " << fovv_degrees << std::endl <<
+                         "fast_pyramid: " << fast_pyramid << std::endl);
 
     /******************SET DIFODO ATTRIBUTES VALUES*****************/
     this->fovh = M_PI * fovh_degrees / 180.0;
@@ -87,8 +107,7 @@ void CROSDifodo::loadConfiguration(/*const mrpt::config::CConfigFileBase& ini*/)
                   rows_ctf, this->m_height);
         // Set the maximum allowed by default
         this->rows = rows_orig / downsample;
-    }
-    else {
+    } else {
         this->rows = rows_ctf;
     }
 
@@ -97,8 +116,7 @@ void CROSDifodo::loadConfiguration(/*const mrpt::config::CConfigFileBase& ini*/)
                   cols_ctf, this->m_width);
         // Set the maximum allowed by default
         this->cols = cols_orig / downsample;
-    }
-    else {
+    } else {
         this->cols = cols_ctf;
     }
 

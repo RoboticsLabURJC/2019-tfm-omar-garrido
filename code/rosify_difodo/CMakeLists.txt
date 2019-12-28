@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(rosified_difodo)
+project(rosify_difodo)
 
 # Message to debug
 message("STARTING BUILDING")
