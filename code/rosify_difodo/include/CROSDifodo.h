@@ -99,13 +99,13 @@ private:
     /**
      * Resolution of the images that comes through the subscribed topic in their original resolution
      */
-    uint16_t rows_orig;
-    uint16_t cols_orig;
+    int rows_orig;
+    int cols_orig;
 
     /**
      * The framerate of the camera or ROS topic in this case. This value is used for the temporal dependant calculus.
      */
-    uint8_t camera_fps;
+    int camera_fps;
 
     /**
      * The objective frame rate that the algorithm will work at. This will be the maximum work rate but, due to hardware
@@ -115,15 +115,15 @@ private:
      * higher value, also is not an error.
      * NOTE: the DIFODO algorithm has a this->execution_time that measures the execution of DIFODO.
      */
-    uint8_t objective_fps;
+    int objective_fps;
 
     /**
      * The finest resolution of the course to fine pyramid. Can be less than the depth image used but in the experiments
      * Ive made, results are bad when using a different resolution than the depth image after downsampling.
      * Because of this, this value is FIXED to the resolution of the depth images downsampled.
      */
-    uint16_t rows_ctf;
-    uint16_t cols_ctf;
+    int rows_ctf;
+    int cols_ctf;
 
     /**
      * Your camera FOV (Field of View) in degrees. If no values are provided the default values for realsense D435 will
