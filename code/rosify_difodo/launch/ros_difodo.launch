@@ -1,7 +1,8 @@
 <launch>
     <!--Package is the name of the package as inthe package.xml is defined, type is the node name that is the name of
-    of the executable created, finally name is just a given name (Just the name you will see when using "rosnode list")-->
-    <node pkg="rosify_difodo" type="ros_difodo" name="rosify_difodo_node" />
+    of the executable created, finally name is just a given name (Just the name you will see when using "rosnode list").
+    output=screen is meant to redirect the stdout or logs to the terminal where the launch was made.-->
+    <node pkg="rosify_difodo" type="ros_difodo" name="rosify_difodo_node" output="screen"/>
 
     <param name="input_depth_topic" value="/camera/depth/image_rect_raw" type="str" />
     <param name="output_odom_topic" value="/difodo/odometry" type="str" />
@@ -12,7 +13,7 @@
     <param name="downsample" value="4" type="int" />
 
     <param name="camera_fps" value="30" type="int" />
-    <param name="objective_fps" value="10" type="int" />
+    <param name="objective_fps" value="90" type="int" />
 
     <param name="ctf_levels" value="5" type="int" />
 

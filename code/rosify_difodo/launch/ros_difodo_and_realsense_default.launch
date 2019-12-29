@@ -1,0 +1,10 @@
+<!--
+THIS LAUNCH FILE WILL START THE REALSENSE CAMERA WITH THE DEFAULT PARAMETERS
+AND THEN THE DIFODO ALGORITHM
+-->
+
+<launch>
+    <!--First launch the realsense camera-->
+    <include file="$(find realsense2_camera)/launch/rs_rgbd.launch" />
+    <include file="$(find rosify_difodo)/launch/ros_difodo.launch" />
+</launch>

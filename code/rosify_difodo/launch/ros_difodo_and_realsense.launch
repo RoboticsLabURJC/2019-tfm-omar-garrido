@@ -1,0 +1,5 @@
+<launch>
+    <!--First launch the realsense camera-->
+    <include file="$(find rosify_difodo)/launch/rs_rgbd.launch" />
+    <include file="$(find rosify_difodo)/launch/ros_difodo.launch" />
+</launch>

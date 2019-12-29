@@ -58,8 +58,9 @@ void CROSDifodo::loadConfiguration() {
     ros::param::get("/cols_orig", cols_orig);
 
     int aux; // This is needed since get only works with integer (int32) references and not any other uint or uint_16...
-    ros::param::get("/downsample", aux);
-    downsample = aux;
+    if (ros::param::get("/downsample", aux)) {
+        downsample = aux;
+    }
 
     ros::param::get("/camera_fps", camera_fps);
     ros::param::get("/objective_fps", objective_fps);
@@ -67,8 +68,9 @@ void CROSDifodo::loadConfiguration() {
     // Controls the number of messages per second we want to send.
     loop_rate = new ros::Rate(objective_fps);
 
-    ros::param::get("/ctf_levels", aux);
-    ctf_levels = aux;
+    if (ros::param::get("/ctf_levels", aux)) {
+        ctf_levels = aux;
+    }
 
     rows_ctf = rows_orig / downsample;
     cols_ctf = cols_orig / downsample;
@@ -78,7 +80,8 @@ void CROSDifodo::loadConfiguration() {
 
     ros::param::get("/fast_pyramid", fast_pyramid);
 
-    ROS_INFO_STREAM("---------------------------------------------------------" << std::endl <<
+    ROS_INFO_STREAM(std::endl <<
+                         "---------------------------------------------------------" << std::endl <<
                          "             CONFIGURATION PARAMETERS LOADED" << std::endl <<
                          "---------------------------------------------------------" << std::endl <<
                          "input_depth_topic: " << input_depth_topic << std::endl <<
@@ -349,28 +352,13 @@ nav_msgs::Odometry CROSDifodo::createOdometryMsg(double pos_x, double pos_y, dou
     odom.pose.pose.orientation.z = quat_tf.z();
     odom.pose.pose.orientation.w = quat_tf.w();
 
-//    odom.pose.covariance  // See ->http://manialabs.wordpress.com/2012/08/06/covariance-matrices-with-a-practical-example/
-    //getCovariance()
-
-    // DEBUG velocities study-----------------------------------------------------------------
-    // Velocidades a twist que se calculan automaticamente en DIFODO de aqui se pueden sacar directamente
-    kai_abs.vx;
-    kai_loc.vx;  // Supuestamente esta es en coordenadas locales, imagino que es la que habria que usar.
-
-    double dif_x;
-    if (this->execution_time > (1000.0 / this->camera_fps / 1000)) {
-        dif_x = (cam_oldpose.x() - cam_pose.x()) / (this->execution_time / 1000);
-        ROS_INFO("execution time");
-    } else {
-        dif_x = (cam_oldpose.x() - cam_pose.x()) / (1000.0 / (this->camera_fps));
-        ROS_INFO("camera");
-
+    //Covariance explained: http://manialabs.wordpress.com/2012/08/06/covariance-matrices-with-a-practical-example/
+    // Both matrices are 6*6. array of double [36] for odometry.covariance while the getcovaraince() is [6, 6]
+    int i = 0;
+    for(auto iter=this->getCovariance().cbegin(); iter != this->getCovariance().cend(); iter++) {
+        odom.pose.covariance[i] = static_cast<double>(*iter);
+        i++;
     }
-
-    ROS_INFO_STREAM("kai_abs: " << kai_abs.vx);
-    ROS_INFO_STREAM("kai_loc: " << kai_loc.vx);
-    ROS_INFO_STREAM("dif_x: " << dif_x);
-    // DEBUG velocities study END-------------------------------------------------------------
 
     // Set velocity
     /* Velocity is often used to get the next position of the robot instead of getting the pose and then computing
@@ -381,20 +369,15 @@ nav_msgs::Odometry CROSDifodo::createOdometryMsg(double pos_x, double pos_y, dou
      *  moving (due to this speed) in reference to the central coordinate system called "odom".
      */
     odom.child_frame_id = "base_link";
-    odom.twist.twist.linear.x = 0;
-    odom.twist.twist.linear.y = 0;
-    odom.twist.twist.linear.z = 0;
-    odom.twist.twist.angular.x = 0;
-    odom.twist.twist.angular.y = 0;
-    odom.twist.twist.angular.z = 0;
-//    odom.twist.twist.linear.x = kai_abs.vx;
-//    odom.twist.twist.linear.y = kai_abs.vy;
-//    odom.twist.twist.linear.z = kai_abs.vz;
-//    odom.twist.twist.angular.x = kai_abs.wx;
-//    odom.twist.twist.angular.y = kai_abs.wy;
-//    odom.twist.twist.angular.z = kai_abs.wz;
+    odom.twist.twist.linear.x = kai_loc.vx;
+    odom.twist.twist.linear.y = kai_loc.vy;
+    odom.twist.twist.linear.z = kai_loc.vz;
+    odom.twist.twist.angular.x = kai_loc.wx;
+    odom.twist.twist.angular.y = kai_loc.wy;
+    odom.twist.twist.angular.z = kai_loc.wz;
 
-//    odom.twist.covariance
+    //    odom.twist.covariance
+
     return odom;
 }
 
