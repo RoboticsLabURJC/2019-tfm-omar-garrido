@@ -190,7 +190,11 @@ roslaunch rosify_difodo ros_difodo.launch camera_fps:=60
 roslaunch rosify_difodo ros_difodo_and_realsense.launch.launch camera_fps:=60 depth_fps:=60
 ```
 
-For whatever the reason even though the changes are reflected in the execution, I cant get past the 30FPS for the depth frame, maybe is a hardware issue...
+**For whatever the reason even though the changes are reflected in the execution, I cant get past the 30FPS for the depth frame, maybe is a hardware issue...**
+
+Another interesting parameter to change is **working\_fps** in the ros_difodo.launch.
+This parameter controls the maximum speed at what difodo works. (If hardware doesnt allow to work at that speed it will simply work at the maximum otherwise it will work at the specified rate and publish messages at that frequency)
+
 
 
 ### Information visualization: Logs, topics...
