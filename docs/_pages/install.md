@@ -17,8 +17,9 @@ classes: wide
 Check the instrucctions and get the code from [https://github.com/RoboticsLabURJC/2019-tfm-omar-garrido/tree/master/code/rosify_difodo](https://github.com/RoboticsLabURJC/2019-tfm-omar-garrido/tree/master/code/rosify_difodo)
 
 ## Requisites
-The latest version of **Rosify Difodo ** has been tested and is currently working on Ubuntu 18.04 LTS but it should work on other platforms. It has been tested with latest [ros-melodic](http://wiki.ros.org/melodic).
+The latest version of **Rosify Difodo** has been tested and is currently working on Ubuntu 18.04 LTS but it should work on other platforms. It has been tested with latest [ros-melodic](http://wiki.ros.org/melodic).
 It should work with other ros versions like **ros-kinetics and Ubuntu 16.04** but havent been tested yet.
+
 **Note: ros-melodic only supports officially Ubuntu 18.04 while ros-kinetics supports only Ubuntu 16.04**
 
 ### CMake
