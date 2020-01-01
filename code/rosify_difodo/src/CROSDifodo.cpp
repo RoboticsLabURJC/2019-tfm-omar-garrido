@@ -81,20 +81,20 @@ void CROSDifodo::loadConfiguration() {
     ros::param::get("/fast_pyramid", fast_pyramid);
 
     ROS_INFO_STREAM(std::endl <<
-                         "---------------------------------------------------------" << std::endl <<
-                         "             CONFIGURATION PARAMETERS LOADED" << std::endl <<
-                         "---------------------------------------------------------" << std::endl <<
-                         "input_depth_topic: " << input_depth_topic << std::endl <<
-                         "output_odom_topic: " << output_odom_topic << std::endl <<
-                         "rows_orig: " << rows_orig << std::endl <<
-                         "cols_orig: " << cols_orig << std::endl <<
-                         "downsample: " << downsample << std::endl <<
-                         "camera_fps: " << camera_fps << std::endl <<
-                         "objective_fps: " << objective_fps << std::endl <<
-                         "ctf_levels " << ctf_levels << std::endl <<
-                         "fovh_degrees: " << fovh_degrees << std::endl <<
-                         "fovv_degrees: " << fovv_degrees << std::endl <<
-                         "fast_pyramid: " << fast_pyramid << std::endl);
+                              "---------------------------------------------------------" << std::endl <<
+                              "             CONFIGURATION PARAMETERS LOADED" << std::endl <<
+                              "---------------------------------------------------------" << std::endl <<
+                              "input_depth_topic: " << input_depth_topic << std::endl <<
+                              "output_odom_topic: " << output_odom_topic << std::endl <<
+                              "rows_orig: " << rows_orig << std::endl <<
+                              "cols_orig: " << cols_orig << std::endl <<
+                              "downsample: " << downsample << std::endl <<
+                              "camera_fps: " << camera_fps << std::endl <<
+                              "objective_fps: " << objective_fps << std::endl <<
+                              "ctf_levels " << ctf_levels << std::endl <<
+                              "fovh_degrees: " << fovh_degrees << std::endl <<
+                              "fovv_degrees: " << fovv_degrees << std::endl <<
+                              "fast_pyramid: " << fast_pyramid << std::endl);
 
     /******************SET DIFODO ATTRIBUTES VALUES*****************/
     this->fovh = M_PI * fovh_degrees / 180.0;
@@ -354,10 +354,10 @@ nav_msgs::Odometry CROSDifodo::createOdometryMsg(double pos_x, double pos_y, dou
 
     //Covariance explained: http://manialabs.wordpress.com/2012/08/06/covariance-matrices-with-a-practical-example/
     // Both matrices are 6*6. array of double [36] for odometry.covariance while the getcovaraince() is [6, 6]
-    int i = 0;
-    for(auto iter=this->getCovariance().cbegin(); iter != this->getCovariance().cend(); iter++) {
-        odom.pose.covariance[i] = static_cast<double>(*iter);
-        i++;
+    auto double_covariance_mtx = this->getCovariance().cast_double();
+    int elements_count = this->getCovariance().rows() * this->getCovariance().cols();
+    for(int i = 0;  i < elements_count; i++) {
+        odom.pose.covariance[i] = double_covariance_mtx(i);
     }
 
     // Set velocity
@@ -375,7 +375,6 @@ nav_msgs::Odometry CROSDifodo::createOdometryMsg(double pos_x, double pos_y, dou
     odom.twist.twist.angular.x = kai_loc.wx;
     odom.twist.twist.angular.y = kai_loc.wy;
     odom.twist.twist.angular.z = kai_loc.wz;
-
     //    odom.twist.covariance
 
     return odom;
