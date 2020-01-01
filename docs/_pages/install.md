@@ -173,6 +173,26 @@ In order to change any configuration parameter of Difodo, the parameters are in 
 
 Also the realsense node has been integrated so if you want to change any parameter just change the **rs_rgbd.launch** from rosify_difodo package. Since **rs_rgbd.launch** includes others launch and xmls sometimes changes are overwritten by the new ones.
 
+**Changing frequency of depth**
+Realsense can operate on different FPS for different resolutions use command **rs-enumerate-devices** to see available resolutions and FPS.
+
+The default resolution is 30FPS, to change the resolution that the camera send information you will have to change the launch file or overwrite like this the desired value:
+
+```
+roslaunch realsense2_camera rs_rgbd.launch depth_fps:=60
+```
+
+Since the FPS of the camera is an unknown parameter for DIFODO it also has to be in difodo configuration file or directly in the command line (this way the change is only temporarily applied into this execution)
+```
+roslaunch rosify_difodo ros_difodo.launch camera_fps:=60
+
+# or everything in the same call
+roslaunch rosify_difodo ros_difodo_and_realsense.launch.launch camera_fps:=60 depth_fps:=60
+```
+
+For whatever the reason even though the changes are reflected in the execution, I cant get past the 30FPS for the depth frame, maybe is a hardware issue...
+
+
 ### Information visualization: Logs, topics...
 
 #### Logs
