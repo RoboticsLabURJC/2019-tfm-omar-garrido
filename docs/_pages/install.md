@@ -18,7 +18,7 @@ Check the instrucctions and get the code from [https://github.com/RoboticsLabURJ
 
 ## Requisites
 The latest version of **Rosify Difodo** has been tested and is currently working on Ubuntu 18.04 LTS but it should work on other platforms. It has been tested with latest [ros-melodic](http://wiki.ros.org/melodic).
-It should work with other ros versions like **ros-kinetics and Ubuntu 16.04** but havent been tested yet.
+**(NOT WORKING on Ubuntu 16.04)** It should work with other ros versions like **ros-kinetics and Ubuntu 16.04** but havent been tested yet.
 
 **Note: ros-melodic only supports officially Ubuntu 18.04 while ros-kinetics supports only Ubuntu 16.04**
 
@@ -33,7 +33,7 @@ Ros-melodic comes with OpenCV 3.2.0
 
 ### ROS
 - If your are using Ubuntu 18.04 install latest ros-melodic following the [official instructions](http://wiki.ros.org/melodic/Installation/Ubuntu).
-- If your are using Ubuntu 16.04 is better to install ros-kinetics from [official instructions](http://wiki.ros.org/kinetic/Installation/Ubuntu).
+- **(NOT WORKING)** If your are using Ubuntu 16.04 is better to install ros-kinetics from [official instructions](http://wiki.ros.org/kinetic/Installation/Ubuntu).
 
 **Also you can always try to compile ros from sources in your desired Ubuntu version we do not recommend it.**
 
@@ -194,6 +194,37 @@ roslaunch rosify_difodo ros_difodo_and_realsense.launch.launch camera_fps:=60 de
 
 Another interesting parameter to change is **working\_fps** in the ros_difodo.launch.
 This parameter controls the maximum speed at what difodo works. (If hardware doesnt allow to work at that speed it will simply work at the maximum otherwise it will work at the specified rate and publish messages at that frequency)
+
+## Launch files and parameters
+There are a few launch files which also set some parameters, here is a brief summary of them:
+
+### ros\_difodo.launch
+This node is primarily used to set up the parameters from the difodo algorithm. Without it the default values will be loaded.
+
+- **input_depth_topic**:The topic where the depth images come from
+- **input_depth_topic**:The topic where the odometry message is publish to. Default: /difodo/odometry
+- **rows_orig**: rows or height of the depth image
+- **cols_orig**: cols or width of the depth image
+- **depth_pixel_scale**: The scale of the depth pixel. Default 1000. 1000 in a depth pixel values means 1.000 meters
+- **downsample**: The downsample that you want to apply to the original image. 1 if not downsample wants to be applied.
+- **camera\_fps**: The camera or publishing rate from the depth topic.
+- **objective\_fps**: The rate or frequency to publish odometry. If higher that the camera_fps it wont be reach since the camera_fps dictates the limit frequency.
+- **ctf_levels**: The levels of pyramid to apply on DIFODO. Default to 5. (NOTE: leave as it is since lowering will affect results and higher values performance and wont give better results)
+- **fovh_degrees**: FOV horizontal of the camera
+- **fovv_degrees**: FOV vertical of the camera
+- **fast_pyramid**: Use a fast pyramid to build the image pyramid. Defautl to false(NOTE: Leave as default otherwise it will fail)
+
+
+### ros\_difodo_default.launch
+This launches rs_rgbd.launch from realsense2_camera and ros_difodo. Useful if you are going to use a realsense camera. It will first start the camera publishing with the default parameters and then difodo.
+
+### ros\_difodo.launch
+The same as the previous but it will start the local rs_rgbd.launch, so local changes and configuration can be applied there.
+
+### rs_rgbd.launch
+A copy of the original rs_rgbd.launch from realsense2_camera. Use to change parameters without modifying the original launch file
+
+
 
 
 
