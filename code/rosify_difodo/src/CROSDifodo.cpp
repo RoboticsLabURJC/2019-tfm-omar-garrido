@@ -177,6 +177,146 @@ void CROSDifodo::loadConfiguration() {
     this->depth_wf.setSize(this->m_height, this->m_width);
 }
 
+void CROSDifodo::loadInnerConfiguration() {
+    // This method returns false if the value couldn be found, but we already have the default values in the constructor
+    // so no need to check for it
+    input_depth_topic = "/camera/depth/image_rect_raw";
+    output_odom_topic = "/difodo/odometry";
+
+    rows_orig = 480;
+    cols_orig = 640;
+
+    /**
+     * The number of times we want to downsample the original resolution.
+     * downsample = 1 means that no downsample will be made.
+     * Check the original description from definitions in CDifodo.h
+     */
+    downsample = 2;
+
+    camera_fps = 30;
+    objective_fps = 30;
+
+    // Controls the number of messages per second we want to send.
+    loop_rate = new ros::Rate(objective_fps);
+
+    ctf_levels = 5;
+
+    rows_ctf = rows_orig / downsample;
+    cols_ctf = cols_orig / downsample;
+
+    fovh_degrees = 74.0f; //58.6;
+    fovv_degrees = 62.0f;; //45.6;
+
+    // NOTE: I dont know why but if set to true, the algorithm doesnt work...
+    fast_pyramid = false;
+
+    // Control booleans
+    is_new_frame_available = false;
+    is_cancel = false;
+
+    // Just to initialize it, the first measurement wont be accurate but the followings will be.
+    last_execution_time = (double) cv::getTickCount();
+
+    // Controls the number of messages per second we want to send.
+    loop_rate = new ros::Rate(objective_fps);
+
+    ROS_INFO_STREAM(std::endl <<
+                              "---------------------------------------------------------" << std::endl <<
+                              "             CONFIGURATION PARAMETERS LOADED" << std::endl <<
+                              "---------------------------------------------------------" << std::endl <<
+                              "input_depth_topic: " << input_depth_topic << std::endl <<
+                              "output_odom_topic: " << output_odom_topic << std::endl <<
+                              "rows_orig: " << rows_orig << std::endl <<
+                              "cols_orig: " << cols_orig << std::endl <<
+                              "downsample: " << downsample << std::endl <<
+                              "camera_fps: " << camera_fps << std::endl <<
+                              "objective_fps: " << objective_fps << std::endl <<
+                              "ctf_levels " << ctf_levels << std::endl <<
+                              "fovh_degrees: " << fovh_degrees << std::endl <<
+                              "fovv_degrees: " << fovv_degrees << std::endl <<
+                              "fast_pyramid: " << fast_pyramid << std::endl);
+
+    /******************SET DIFODO ATTRIBUTES VALUES*****************/
+    this->fovh = M_PI * fovh_degrees / 180.0;
+    this->fovv = M_PI * fovv_degrees / 180.0;
+
+    // Resolution of the depth image that the algorithm will work with. After the downsampling.
+    this->m_width = cols_orig / this->downsample;
+    this->m_height = rows_orig / this->downsample;
+
+    // Resolution of the finest level of the pyramid. Should be equal or lower than the image working resolution.
+    if (rows_orig < rows_ctf) {
+        ROS_ERROR("The rows_ctf (%d) cannot be more than those of the working depth image rows_orig/downsample = %d.",
+                  rows_ctf, this->m_height);
+        // Set the maximum allowed by default
+        this->rows = rows_orig / downsample;
+    } else {
+        this->rows = rows_ctf;
+    }
+
+    if (cols_orig < cols_ctf) {
+        ROS_ERROR("The cols_ctf (%d) cannot be more than those of the working depth image cols_orig/downsample = %d.",
+                  cols_ctf, this->m_width);
+        // Set the maximum allowed by default
+        this->cols = cols_orig / downsample;
+    } else {
+        this->cols = cols_ctf;
+    }
+
+    this->fps = camera_fps;
+
+    /******************Resize Matrices and adjust parameters*****************/
+    // *****Pyramid setup*****
+    // Resize each matrix to have the same number of matrices than levels of pyramid
+    const unsigned int pyr_levels =
+            std::round(log((float) this->m_width / this->cols) / log(2.f)) + this->ctf_levels;
+    this->depth.resize(pyr_levels);
+    this->depth_old.resize(pyr_levels);
+    this->depth_inter.resize(pyr_levels);
+    this->depth_warped.resize(pyr_levels);
+    this->xx.resize(pyr_levels);
+    this->xx_inter.resize(pyr_levels);
+    this->xx_old.resize(pyr_levels);
+    this->xx_warped.resize(pyr_levels);
+    this->yy.resize(pyr_levels);
+    this->yy_inter.resize(pyr_levels);
+    this->yy_old.resize(pyr_levels);
+    this->yy_warped.resize(pyr_levels);
+    this->transformations.resize(pyr_levels);
+
+    // Resize each level (or matrix) of the pyramid to the desired (rows,cols) size
+    for (unsigned int i = 0; i < pyr_levels; i++) {
+        unsigned int s = pow(2.f, int(i));
+        this->cols_i = this->m_width / s;
+        this->rows_i = this->m_height / s;
+        this->depth[i].resize(this->rows_i, this->cols_i);
+        this->depth_inter[i].resize(this->rows_i, this->cols_i);
+        this->depth_old[i].resize(this->rows_i, this->cols_i);
+        this->depth[i].fill(0.0f);
+        this->depth_old[i].fill(0.0f);
+        this->xx[i].resize(this->rows_i, this->cols_i);
+        this->xx_inter[i].resize(this->rows_i, this->cols_i);
+        this->xx_old[i].resize(this->rows_i, this->cols_i);
+        this->xx[i].fill(0.0f);
+        this->xx_old[i].fill(0.0f);
+        this->yy[i].resize(this->rows_i, this->cols_i);
+        this->yy_inter[i].resize(rows_i, this->cols_i);
+        this->yy_old[i].resize(this->rows_i, this->cols_i);
+        this->yy[i].fill(0.0f);
+        this->yy_old[i].fill(0.0f);
+        this->transformations[i].resize(4, 4);
+
+        if (this->cols_i <= this->cols) {
+            this->depth_warped[i].resize(this->rows_i, this->cols_i);
+            this->xx_warped[i].resize(this->rows_i, this->cols_i);
+            this->yy_warped[i].resize(this->rows_i, this->cols_i);
+        }
+    }
+
+    // Prepare the depth image for the resolution of the images after the downsample
+    this->depth_wf.setSize(this->m_height, this->m_width);
+}
+
 void CROSDifodo::loadFrame() {
     // Check if resize is needed
     if (this->downsample != 1) {
@@ -404,6 +544,7 @@ void CROSDifodo::publishOdometryMsgs(double pos_x, double pos_y, double pos_z,
 }
 
 void CROSDifodo::execute_iteration() {
+    // 1. Load frame if a new frame is available otherwise return and retry in the next iteration
     {
         //unlocks the mutex when goes out of scope with the destructor.
         std::lock_guard<std::mutex> guard(this->frame_mutex);
@@ -416,12 +557,16 @@ void CROSDifodo::execute_iteration() {
         }
     }
 
-    // Compute and publish odometry
+    // 2. Compute and publish odometry
     this->odometryCalculation();
 
     //Publish pose
     //ROS_INFO_STREAM("New pose" << this->cam_pose);
 
+    // 3. Control the working rate: Wait the time needed to publish at the constant rate specified
+    this->loop_rate->sleep();
+
+    // 4. Publish the odometry messages and transforms.
     this->publishOdometryMsgs(this->cam_pose.x(), this->cam_pose.y(), this->cam_pose.z(),
                               this->cam_pose.roll(), this->cam_pose.pitch(), this->cam_pose.yaw());
 
@@ -453,10 +598,5 @@ void CROSDifodo::run_difodo() {
     loop_rate->reset();  // Start the timer start to measure correctly from this time to the next sleep
     while (!this->is_cancel) {
         this->execute_iteration();
-        // WARNING: For whatever the reason when using this sleep the algorithm time "execution_time" increase from 8ms
-        // to 12ms... This makes no sense since execution time is the internal execution time of the method
-        // odometryCalculation() from Difodo...So
-        // But when working with lower objective_fps like 1-5-10 Hz is useful to publish at a constant frequency.
-        this->loop_rate->sleep();
     }
 }

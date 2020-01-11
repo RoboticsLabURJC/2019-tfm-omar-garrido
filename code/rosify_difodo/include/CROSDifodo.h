@@ -30,13 +30,23 @@ class CROSDifodo : public mrpt::vision::CDifodo {
 
 public:
     CROSDifodo();
+
     /**
      * Initialize all values needed by the DifOdo algorithm.
      * All values related to the depth strema (resolution, FPS, FOV of the camera...)
      * If downsampling is required (if our camera resolution is too high and we cannot change the stream
      * a downsampling can be made for the input images.
+     * The values are loaded within the code. (TODO: Change to an xml).
+     * This option is useful for testing purposes since on an IDE you cannot use roslaunch and load a launch file.
+     * Execute the binary file with option --use_inner_config to use this method instead the loadConfiguration()
      */
-    void loadConfiguration(); //TODO: Quizas recibir el path a un archivo u algo
+    void loadInnerConfiguration();
+
+    /**
+     * Loads the same values as loadInnerConfiguration but from the ros parameter server. Usually these parameters will
+     * be defined in a launch.file
+     */
+    void loadConfiguration();
 
     /**
      * Starts the Difodo algorithm in a new thread that consumes the depth images coming from ROS
