@@ -102,11 +102,6 @@ private:
     std::string output_odom_topic;
 
     /**
-     * The rate that we want to publish messages at. In hertz (Hz)
-     */
-    ros::Rate *loop_rate;
-
-    /**
      * Resolution of the images that comes through the subscribed topic in their original resolution
      */
     int rows_orig;

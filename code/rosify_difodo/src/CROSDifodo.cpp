@@ -9,7 +9,6 @@
 
 CROSDifodo::CROSDifodo() : mrpt::vision::CDifodo() {
     // DEFAULT ATTRIBUTES VALUES
-
     first_iteration = true;
 
     input_depth_topic = "/camera/depth/image_rect_raw";
@@ -28,9 +27,6 @@ CROSDifodo::CROSDifodo() : mrpt::vision::CDifodo() {
 
     camera_fps = 30;
     objective_fps = 30;
-
-    // Controls the number of messages per second we want to send.
-    loop_rate = new ros::Rate(objective_fps);
 
     ctf_levels = 5;
 
@@ -70,9 +66,6 @@ void CROSDifodo::loadConfiguration() {
 
     ros::param::get("/camera_fps", camera_fps);
     ros::param::get("/objective_fps", objective_fps);
-
-    // Controls the number of messages per second we want to send.
-    loop_rate = new ros::Rate(objective_fps);
 
     if (ros::param::get("/ctf_levels", aux)) {
         ctf_levels = aux;
@@ -207,9 +200,6 @@ void CROSDifodo::loadInnerConfiguration() {
     camera_fps = 30;
     objective_fps = 30;
 
-    // Controls the number of messages per second we want to send.
-    loop_rate = new ros::Rate(objective_fps);
-
     ctf_levels = 5;
 
     rows_ctf = rows_orig / downsample;
@@ -227,9 +217,6 @@ void CROSDifodo::loadInnerConfiguration() {
 
     // Just to initialize it, the first measurement wont be accurate but the followings will be.
     last_execution_time = (double) cv::getTickCount();
-
-    // Controls the number of messages per second we want to send.
-    loop_rate = new ros::Rate(objective_fps);
 
     ROS_INFO_STREAM(std::endl <<
                               "---------------------------------------------------------" << std::endl <<
