@@ -13,7 +13,23 @@ int main(int argc, char **argv) {
     ros::init(argc, argv, node_name);
 
     CROSDifodo ros_difodo = CROSDifodo();
-    ros_difodo.loadConfiguration();
+
+    if (argc >= 2)
+        ROS_INFO_STREAM("More than the needed configuration parameters were provided");
+
+    for (int i=0; i < argc; i++) {
+        std::cout << argv[i] << std::endl;
+    }
+
+    if (std::string(argv[1]) == "--use_inner_config")
+    {
+        ROS_INFO_STREAM("Using internal rosify_difodo config instead of launch file");
+        ros_difodo.loadInnerConfiguration();
+    } else {
+        ROS_INFO_STREAM("Using internal rosify_difodo config instead of launch file");
+        ros_difodo.loadConfiguration();
+    }
+
     ros_difodo.start();
 
     // ROS SPIN MANAGEMENT
