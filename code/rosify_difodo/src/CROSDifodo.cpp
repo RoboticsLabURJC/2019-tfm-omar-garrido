@@ -372,6 +372,21 @@ void CROSDifodo::callbackImageDepthRaw(const sensor_msgs::Image::ConstPtr &msg) 
  */
 void CROSDifodo::rosMsgToCvBridgePtr(const sensor_msgs::Image::ConstPtr &msg, cv_bridge::CvImagePtr &cv_copy_ptr) {
     try {
+        if (first_iteration) {
+            // Do some verifications against the dimensions expected of the image and the one that has been received from
+            // ros messages
+            if (msg->height != this->rows_orig) {
+                ROS_ERROR("The rows_orig(%d) specified is not equal to the image height(%d)", this->rows_orig,
+                          msg->height);
+                exit(-1);
+            }
+            if (msg->width != this->cols_orig) {
+                ROS_ERROR("The cols_orig(%d) specified is not equal to the image width(%d)", this->cols_orig,
+                          msg->width);
+                exit(-1);
+            }
+
+        }
         cv_copy_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::TYPE_16UC1);
     }
     catch (cv_bridge::Exception &e) {
