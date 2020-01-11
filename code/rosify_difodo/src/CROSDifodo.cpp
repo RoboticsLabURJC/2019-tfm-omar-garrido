@@ -9,12 +9,16 @@
 
 CROSDifodo::CROSDifodo() : mrpt::vision::CDifodo() {
     // DEFAULT ATTRIBUTES VALUES
+
+    first_iteration = true;
+
     input_depth_topic = "/camera/depth/image_rect_raw";
     output_odom_topic = "/difodo/odometry";
 
     rows_orig = 480;
     cols_orig = 640;
 
+    depth_pixel_scale = 1000;
     /**
      * The number of times we want to downsample the original resolution.
      * downsample = 1 means that no downsample will be made.
@@ -56,6 +60,8 @@ void CROSDifodo::loadConfiguration() {
 
     ros::param::get("/rows_orig", rows_orig);
     ros::param::get("/cols_orig", cols_orig);
+
+    ros::param::get("/depth_pixel_scale", depth_pixel_scale);
 
     int aux; // This is needed since get only works with integer (int32) references and not any other uint or uint_16...
     if (ros::param::get("/downsample", aux)) {
@@ -180,18 +186,23 @@ void CROSDifodo::loadConfiguration() {
 void CROSDifodo::loadInnerConfiguration() {
     // This method returns false if the value couldn be found, but we already have the default values in the constructor
     // so no need to check for it
+
+    // Realsense D435 = "/camera/depth/image_rect_raw" ; TUM dataset = "/camera/depth/image"
     input_depth_topic = "/camera/depth/image_rect_raw";
     output_odom_topic = "/difodo/odometry";
 
     rows_orig = 480;
     cols_orig = 640;
 
+    // Realsense D435 = 1000 ; TUM dataset = 5000
+    depth_pixel_scale = 5000;
+
     /**
      * The number of times we want to downsample the original resolution.
      * downsample = 1 means that no downsample will be made.
      * Check the original description from definitions in CDifodo.h
      */
-    downsample = 2;
+    downsample = 4;
 
     camera_fps = 30;
     objective_fps = 30;
@@ -396,7 +407,7 @@ void CROSDifodo::cvBrigdeToMRPTMat(const cv_bridge::CvImagePtr &cv_ptr, mrpt::ma
             // copia sino obtener un puntero a la posicion de memoria u algo asi.
             // NOTE: The depth image from realsense comes in milimeters with 4 digits. 3215 will be 3.215 meteres
             // DIFODO uses meters in double precision.
-            depth_image(row, col) = 0.001f * cv_ptr->image.at<uint16_t>(row, col);
+            depth_image(row, col) = (1.0f/depth_pixel_scale) * cv_ptr->image.at<uint16_t>(row, col);
 
             // TODO: Crear una funcion de filtering o hacer aqui un filtrado de la imagen de profundidad en funcion de
             //  distancia minima y maxima (Setear esos valores a 0) Mirar como lo hace en los ejemplos de
@@ -543,6 +554,28 @@ void CROSDifodo::publishOdometryMsgs(double pos_x, double pos_y, double pos_z,
     this->odom_publisher.publish(odom_msg);
 }
 
+double CROSDifodo::control_working_rate() {
+    double working_time_ms;
+    double time_sleeping = (double) cv::getTickCount();
+
+    if (first_iteration) {
+        first_iteration = false;
+    } else {
+        working_time_ms = ((double) cv::getTickCount() - this->last_execution_time) / cv::getTickFrequency() * 1000;
+        if (objective_fps < camera_fps) {
+            ROS_INFO_STREAM("Time to sleep: " << 1000.0f/objective_fps - working_time_ms << " ms");
+            double usec_to_sleep = (1000.0f/objective_fps - working_time_ms) * 1000;
+            if (usec_to_sleep > 0) {
+                usleep(usec_to_sleep); //Its un micro seconds
+            }
+        }
+    }
+
+    time_sleeping = ((double) cv::getTickCount() - time_sleeping) / cv::getTickFrequency() * 1000;
+    this->last_execution_time = (double) cv::getTickCount();
+    return working_time_ms + time_sleeping;
+}
+
 void CROSDifodo::execute_iteration() {
     // 1. Load frame if a new frame is available otherwise return and retry in the next iteration
     {
@@ -564,18 +597,12 @@ void CROSDifodo::execute_iteration() {
     //ROS_INFO_STREAM("New pose" << this->cam_pose);
 
     // 3. Control the working rate: Wait the time needed to publish at the constant rate specified
-    this->loop_rate->sleep();
+    // Compute the working time or working frame rate.
+    double working_time_ms = this->control_working_rate();
 
-    // 4. Publish the odometry messages and transforms.
-    this->publishOdometryMsgs(this->cam_pose.x(), this->cam_pose.y(), this->cam_pose.z(),
-                              this->cam_pose.roll(), this->cam_pose.pitch(), this->cam_pose.yaw());
-
-    // Compute execution times
 #ifdef DEBUG
     // Compute the working time or working frame rate
-    double working_time = ((double) cv::getTickCount() - this->last_execution_time) / cv::getTickFrequency() * 1000;
-    this->last_execution_time = (double) cv::getTickCount();
-    float working_fps = 1000 / working_time;
+    float working_fps = 1000 / working_time_ms;
 
     // Add an offset in the FPS of 0.5 so if is working at 29.98 instead of 30 FPS we dont raise any warning
     if (working_fps + 0.5 < this->objective_fps) {
@@ -584,18 +611,21 @@ void CROSDifodo::execute_iteration() {
     }
 
     if (this->execution_time > (1000 / this->objective_fps)) {
-        ROS_WARN_STREAM("The algorithm takes more time to process an image tham the objective_fps configured"
+        ROS_WARN_STREAM("The algorithm takes more time to process an image than the objective_fps configured"
         );
     }
 
     ROS_INFO_STREAM("Execution time of DifOdo only " << this->execution_time << " ms");
-    ROS_INFO_STREAM("Executing at:                 " << working_time << " ms");
+    ROS_INFO_STREAM("Executing at:                 " << working_time_ms << " ms");
     ROS_INFO_STREAM("Working at FPS:               " << working_fps << " FPS");
 #endif
+
+    // 4. Publish the odometry messages and transforms.
+    this->publishOdometryMsgs(this->cam_pose.x(), this->cam_pose.y(), this->cam_pose.z(),
+                              this->cam_pose.roll(), this->cam_pose.pitch(), this->cam_pose.yaw());
 }
 
 void CROSDifodo::run_difodo() {
-    loop_rate->reset();  // Start the timer start to measure correctly from this time to the next sleep
     while (!this->is_cancel) {
         this->execute_iteration();
     }

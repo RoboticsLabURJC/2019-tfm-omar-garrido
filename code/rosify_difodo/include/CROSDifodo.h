@@ -113,6 +113,13 @@ private:
     int cols_orig;
 
     /**
+     * This value represents the scale for the depth image. Depth images doesnt comes in meters, usually they come as
+     * uint16 integers with a scale of 1000/1. in this example a value of 1000 would be 1 meter. 1510 would be 1.512m.
+     * The DIFODO algorithm works in meters so we have to know the scale of the dataset first.
+     */
+    int depth_pixel_scale;
+
+    /**
      * The framerate of the camera or ROS topic in this case. This value is used for the temporal dependant calculus.
      */
     int camera_fps;
@@ -153,6 +160,11 @@ private:
     cv_bridge::CvImagePtr cv_copy_ptr;
 
     /**
+     * Variable just to know that we are on the first iteration or not
+     */
+    bool first_iteration;
+
+    /**
      * This flag lets the consumer thread know if the depth_image has already being process or has not being processed.
      */
     bool is_new_frame_available;
@@ -191,6 +203,14 @@ private:
      * Executes the difodo algorithm in a loop until is cancelled
      */
     void run_difodo();
+
+    /**
+     * This method is executed when the user wants to run at a frequency lower than the FPS of the depth images are
+     * being publish. To do so it checks if there is time left to sleep until the required execution time is reach and
+     * sleep for that amount of time. If is going slower that the established frequency then it wont wait.
+     * Returns the time that has taken this iteration to be process, without the time to sleep included.
+     */
+    double control_working_rate();
 
     /**
      * This callback stores the ros depth image in a queue (FIFO). So images can be used later by the

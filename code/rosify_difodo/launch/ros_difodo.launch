@@ -10,10 +10,12 @@
     <param name="rows_orig" value="480" type="int" />
     <param name="cols_orig" value="640" type="int" />
 
+    <param name="depth_pixel_scale" value="1000" type="int" />
+
     <param name="downsample" value="4" type="int" />
 
     <param name="camera_fps" value="30" type="int" />
-    <param name="objective_fps" value="90" type="int" />
+    <param name="objective_fps" value="30" type="int" />
 
     <param name="ctf_levels" value="5" type="int" />
 
