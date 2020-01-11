@@ -3,7 +3,9 @@
 This is a repo that aims to create a ROS version of the Difodo algorithm from the mrpt platform.
 
 ## Installation and Usage
-Check the [installation guide](https://roboticslaburjc.github.io/2019-tfm-omar-garrido/install/#1-rosify-difodo) from my blog.
+- Check the [installation guide](https://roboticslaburjc.github.io/2019-tfm-omar-garrido/install/#1-rosify-difodo) from my blog.
+- [How to use rosify_difodo](https://roboticslaburjc.github.io/2019-tfm-omar-garrido/install/#usage)
+- [Launch files and parameters information](https://roboticslaburjc.github.io/2019-tfm-omar-garrido/install/#launch-files-and-parameters)
 
 
 Original work can be found here:
