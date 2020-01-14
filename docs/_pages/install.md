@@ -222,7 +222,7 @@ This launches rs_rgbd.launch from realsense2_camera and ros_difodo. Useful if yo
 The same as the previous but it will start the local rs_rgbd.launch, so local changes and configuration can be applied there.
 
 ### rs_rgbd.launch
-A copy of the original rs_rgbd.launch from realsense2_camera. Use to change parameters without modifying the original launch file
+A copy of the original rs_rgbd.launch from realsense2_camera. Use to change parameters without modifying the original launch file. 
 
 
 
