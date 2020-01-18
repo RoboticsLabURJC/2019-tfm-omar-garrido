@@ -121,11 +121,6 @@ private:
     std::string pixel_encoding;
 
     /**
-     * The framerate of the camera or ROS topic in this case. This value is used for the temporal dependant calculus.
-     */
-    int camera_fps;
-
-    /**
      * The objective frame rate that the algorithm will work at. This will be the maximum work rate but, due to hardware
      * limitations (sometimes when hardware cannot handle it), the real execution rate could be less. A warning message
      * will be shown when this happens.
@@ -199,6 +194,16 @@ private:
      * Time to store the time when a certain part of the code was reach.
      */
     double last_execution_time;
+
+    /**
+     * Time to store the time of the current ros depth image message.
+     */
+    ros::Time current_depth_image_time;
+
+    /**
+     * Time to store the time of the last ros depth image message.
+     */
+    ros::Time last_depth_image_time;
 
     /**
      * Executes the difodo algorithm in a loop until is cancelled
