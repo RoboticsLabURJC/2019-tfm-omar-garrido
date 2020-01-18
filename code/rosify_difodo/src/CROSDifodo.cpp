@@ -181,14 +181,16 @@ void CROSDifodo::loadInnerConfiguration() {
     // so no need to check for it
 
     // Realsense D435 = "/camera/depth/image_rect_raw" ; TUM dataset = "/camera/depth/image"
-    input_depth_topic = "/camera/depth/image_rect_raw";
+//    input_depth_topic = "/camera/depth/image_rect_raw";
+    input_depth_topic = "/camera/depth/image";
     output_odom_topic = "/difodo/odometry";
 
     rows_orig = 480;
     cols_orig = 640;
 
-    // Realsense D435 = 1000 ; TUM dataset = 5000
-    depth_pixel_scale = 5000;
+    // Realsense D435 = 1000 ; TUM dataset = 1 (5000 in their website and also 16bit) for the rosbag it seems 32bit and
+    // scale of 1
+    depth_pixel_scale = 1;
 
     /**
      * The number of times we want to downsample the original resolution.
@@ -205,8 +207,12 @@ void CROSDifodo::loadInnerConfiguration() {
     rows_ctf = rows_orig / downsample;
     cols_ctf = cols_orig / downsample;
 
-    fovh_degrees = 74.0f; //58.6;
-    fovv_degrees = 62.0f;; //45.6;
+    // Realsense D435 = 74.0f ; TUM dataset = 58.5;
+//    fovh_degrees = 74.0f;
+    fovh_degrees = 58.5f;
+    // Realsense D435 = 62.0f ; TUM dataset = 46.6;
+//    fovv_degrees = 62.0f;
+    fovv_degrees = 46.6f;
 
     // NOTE: I dont know why but if set to true, the algorithm doesnt work...
     fast_pyramid = false;
@@ -386,8 +392,19 @@ void CROSDifodo::rosMsgToCvBridgePtr(const sensor_msgs::Image::ConstPtr &msg, cv
                 exit(-1);
             }
 
+            // Check the encoding type 16bit or 32bit
+            if (msg->encoding == sensor_msgs::image_encodings::TYPE_16UC1) {
+                ROS_INFO("Encoding of the depth image is 16bit");
+            } else if (msg->encoding == sensor_msgs::image_encodings::TYPE_32FC1) {
+                ROS_INFO("Encoding of the depth image is 32bit");
+            } else {
+                ROS_ERROR_STREAM("Encoding neither 16bit nor 32bit. Exiting due to an unknown encoding type: " << msg->encoding);
+            }
+            // Keep the encoding for latter.
+            this->pixel_encoding = msg->encoding;
         }
-        cv_copy_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::TYPE_16UC1);
+
+        cv_copy_ptr = cv_bridge::toCvCopy(msg, msg->encoding);
     }
     catch (cv_bridge::Exception &e) {
         ROS_ERROR("cv_bridge exception: %s", e.what());
@@ -398,18 +415,44 @@ void CROSDifodo::rosMsgToCvBridgePtr(const sensor_msgs::Image::ConstPtr &msg, cv
  * There are probably better and FASTER ways to loop over a cv::Mat, see:
  * https://docs.opencv.org/2.4/doc/tutorials/core/how_to_scan_images/how_to_scan_images.html#howtoscanimagesopencv
  * https://answers.opencv.org/question/38/what-is-the-most-effective-way-to-access-cvmat-elements-in-a-loop/
+ * https://kezunlin.me/post/61d55ab4/#toc-heading-17 (Best, updated with foreach for new c++ 11)
  * @param cv_ptr
  */
 void CROSDifodo::cvBrigdeToMRPTMat(const cv_bridge::CvImagePtr &cv_ptr, mrpt::math::CMatrixFloat &depth_image) {
-
     for (uint row = 0; row < rows; row++) {
         for (uint col = 0; col < cols; col++) {
-
             //Esto hace una copia seguramente, habra que mirar las formas mas eficientes y en cualquier caso evitar la
             // copia sino obtener un puntero a la posicion de memoria u algo asi.
             // NOTE: The depth image from realsense comes in milimeters with 4 digits. 3215 will be 3.215 meteres
             // DIFODO uses meters in double precision.
-            depth_image(row, col) = (1.0f/depth_pixel_scale) * cv_ptr->image.at<uint16_t>(row, col);
+            double depth_value = 0.0f;
+
+            if (this->pixel_encoding == sensor_msgs::image_encodings::TYPE_16UC1) {
+                depth_value = (1.0f/depth_pixel_scale) * cv_ptr->image.at<uint16_t >(row, col);
+            } else if (this->pixel_encoding == sensor_msgs::image_encodings::TYPE_32FC1) {
+                depth_value = (1.0f/depth_pixel_scale) * cv_ptr->image.at<float>(row, col);
+            }
+
+            // TODO: Filtering values should be a configurable parameter
+            double max_depth_value_filter = 4.5f;
+            double min_depth_value_filter = 0.5f;
+
+            if(min_depth_value_filter <= depth_value && depth_value <= max_depth_value_filter){  // Represents expected pre-REP logic and is the only necessary condition for most applications.
+                // This is a valid measurement.
+                depth_image(row, col) = depth_value;
+            } else if( !isfinite(depth_value) && depth_value < 0){
+                // Object too close to measure.
+                depth_image(row, col) = 0.0f;
+            } else if( !isfinite(depth_value) && depth_value > 0){
+                // No objects detected in range.
+                depth_image(row, col) = 0.0f;
+            } else if( isnan(depth_value) ){
+                // This is an erroneous, invalid, or missing measurement.
+                depth_image(row, col) = 0.0f;
+            } else {
+                // The sensor reported these measurements as valid, but they are discarded per the limits defined by minimum_range and maximum_range.
+                depth_image(row, col) = 0.0f;
+            }
 
             // TODO: Crear una funcion de filtering o hacer aqui un filtrado de la imagen de profundidad en funcion de
             //  distancia minima y maxima (Setear esos valores a 0) Mirar como lo hace en los ejemplos de
@@ -419,10 +462,6 @@ void CROSDifodo::cvBrigdeToMRPTMat(const cv_bridge::CvImagePtr &cv_ptr, mrpt::ma
             //  these tow limit values as configuration parameters. (Better to have a complex configuration file but
             //  well explain that having everythin on code.
             //  https://www.intel.com/content/dam/support/us/en/documents/emerging-technologies/intel-realsense-technology/Intel-RealSense-D400-Series-Datasheet.pdf
-            //if (*pDepth < 4500.f)
-            //depth_wf(yc, xc) = 0.001f * (*pDepth);
-            //else
-            //depth_wf(yc, xc) = 0.f;
         }
     }
 }
@@ -560,13 +599,11 @@ double CROSDifodo::control_working_rate() {
     double working_time_ms;
     double time_sleeping = (double) cv::getTickCount();
 
-    if (first_iteration) {
-        first_iteration = false;
-    } else {
+    if (!first_iteration) {
         working_time_ms = ((double) cv::getTickCount() - this->last_execution_time) / cv::getTickFrequency() * 1000;
         if (objective_fps < camera_fps) {
-            ROS_INFO_STREAM("Time to sleep: " << 1000.0f/objective_fps - working_time_ms << " ms");
-            double usec_to_sleep = (1000.0f/objective_fps - working_time_ms) * 1000;
+            ROS_INFO_STREAM("Time to sleep: " << 1000.0f / objective_fps - working_time_ms << " ms");
+            double usec_to_sleep = (1000.0f / objective_fps - working_time_ms) * 1000;
             if (usec_to_sleep > 0) {
                 usleep(usec_to_sleep); //Its un micro seconds
             }
@@ -595,9 +632,6 @@ void CROSDifodo::execute_iteration() {
     // 2. Compute and publish odometry
     this->odometryCalculation();
 
-    //Publish pose
-    //ROS_INFO_STREAM("New pose" << this->cam_pose);
-
     // 3. Control the working rate: Wait the time needed to publish at the constant rate specified
     // Compute the working time or working frame rate.
     double working_time_ms = this->control_working_rate();
@@ -620,11 +654,15 @@ void CROSDifodo::execute_iteration() {
     ROS_INFO_STREAM("Execution time of DifOdo only " << this->execution_time << " ms");
     ROS_INFO_STREAM("Executing at:                 " << working_time_ms << " ms");
     ROS_INFO_STREAM("Working at FPS:               " << working_fps << " FPS");
+    //Print Pose
+    ROS_INFO_STREAM("New pose" << this->cam_pose);
 #endif
 
     // 4. Publish the odometry messages and transforms.
     this->publishOdometryMsgs(this->cam_pose.x(), this->cam_pose.y(), this->cam_pose.z(),
                               this->cam_pose.roll(), this->cam_pose.pitch(), this->cam_pose.yaw());
+
+    if (first_iteration) first_iteration = false;
 }
 
 void CROSDifodo::run_difodo() {

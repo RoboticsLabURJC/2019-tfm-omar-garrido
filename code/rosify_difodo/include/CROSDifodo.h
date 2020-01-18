@@ -115,6 +115,12 @@ private:
     int depth_pixel_scale;
 
     /**
+     * The encoding of the ros message. Following REP 118 https://www.ros.org/reps/rep-0118.html this can be either
+     * 16bit or 32bit. "16UC1" and "32FC1". Check sensor_msgs/image_encoding.h to see all available encodings.
+     */
+    std::string pixel_encoding;
+
+    /**
      * The framerate of the camera or ROS topic in this case. This value is used for the temporal dependant calculus.
      */
     int camera_fps;
