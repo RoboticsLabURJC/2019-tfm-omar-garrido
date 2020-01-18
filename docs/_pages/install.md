@@ -206,6 +206,8 @@ This node is primarily used to set up the parameters from the difodo algorithm. 
 - **rows_orig**: rows or height of the depth image
 - **cols_orig**: cols or width of the depth image
 - **depth_pixel_scale**: The scale of the depth pixel. Default 1000. 1000 in a depth pixel values means 1.000 meters
+- **min_depth_value_filter**: The minimum accepted value of depth. Lower values will be set to 0
+- **max_depth_value_filter**: The maximum accepted value of depth. Higher values will be set to 0
 - **downsample**: The downsample that you want to apply to the original image. 1 if not downsample wants to be applied.
 - **camera\_fps**: The camera or publishing rate from the depth topic.
 - **objective\_fps**: The rate or frequency to publish odometry. If higher that the camera_fps it wont be reach since the camera_fps dictates the limit frequency.
@@ -214,17 +216,17 @@ This node is primarily used to set up the parameters from the difodo algorithm. 
 - **fovv_degrees**: FOV vertical of the camera
 - **fast_pyramid**: Use a fast pyramid to build the image pyramid. Defautl to false(NOTE: Leave as default otherwise it will fail)
 
+### ros\_difodo_TUM.launch
+Configuration ready to use rosify_difodo with [RGBD SLAM](https://vision.in.tum.de/data/datasets/rgbd-dataset/download) dataset from TUM.
 
-### ros\_difodo_default.launch
+### ros\_difodo_and_realsense_default.launch
 This launches rs_rgbd.launch from realsense2_camera and ros_difodo. Useful if you are going to use a realsense camera. It will first start the camera publishing with the default parameters and then difodo.
 
-### ros\_difodo.launch
-The same as the previous but it will start the local rs_rgbd.launch, so local changes and configuration can be applied there.
+### ros\ros\_difodo_and_realsense.launch
+The same as the previous but it will start the local rs_rgbd.launch within ros_difodo, so local changes and configuration can be applied there.
 
 ### rs_rgbd.launch
-A copy of the original rs_rgbd.launch from realsense2_camera. Use to change parameters without modifying the original launch file. 
-
-
+A copy of the original rs_rgbd.launch from realsense2_camera. Use to change parameters without modifying the original launch file.
 
 
 
