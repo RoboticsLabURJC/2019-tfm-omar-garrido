@@ -18,6 +18,10 @@ CROSDifodo::CROSDifodo() : mrpt::vision::CDifodo() {
     cols_orig = 640;
 
     depth_pixel_scale = 1000;
+
+    min_depth_value_filter = 0.5f;
+    max_depth_value_filter = 4.5f;
+
     /**
      * The number of times we want to downsample the original resolution.
      * downsample = 1 means that no downsample will be made.
@@ -57,6 +61,9 @@ void CROSDifodo::loadConfiguration() {
     ros::param::get("/cols_orig", cols_orig);
 
     ros::param::get("/depth_pixel_scale", depth_pixel_scale);
+
+    ros::param::get("/min_depth_value_filter", min_depth_value_filter);
+    ros::param::get("/max_depth_value_filter", max_depth_value_filter);
 
     int aux; // This is needed since get only works with integer (int32) references and not any other uint or uint_16...
     if (ros::param::get("/downsample", aux)) {
@@ -186,6 +193,9 @@ void CROSDifodo::loadInnerConfiguration() {
     // Realsense D435 = 1000 ; TUM dataset = 1 (5000 in their website and also 16bit) for the rosbag it seems 32bit and
     // scale of 1
     depth_pixel_scale = 1;
+
+    min_depth_value_filter = 0.5f;
+    max_depth_value_filter = 4.5f;
 
     /**
      * The number of times we want to downsample the original resolution.
@@ -426,10 +436,7 @@ void CROSDifodo::cvBrigdeToMRPTMat(const cv_bridge::CvImagePtr &cv_ptr, mrpt::ma
                 depth_pixel_value = (1.0f / depth_pixel_scale) * cv_ptr->image.at<float>(row, col);
             }
 
-            // TODO: Filtering values should be a configurable parameter
-            double max_depth_value_filter = 4.5f;
-            double min_depth_value_filter = 0.5f;
-
+            // FILTER DEPTH VALUES
             if(min_depth_value_filter <= depth_pixel_value && depth_pixel_value <= max_depth_value_filter){  // Represents expected pre-REP logic and is the only necessary condition for most applications.
                 // This is a valid measurement.
                 depth_image(row, col) = depth_pixel_value;

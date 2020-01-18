@@ -12,10 +12,12 @@
 
     <param name="depth_pixel_scale" value="1000" type="int" />
 
+    <param name="min_depth_value_filter" value="0.5" type="double" />
+    <param name="max_depth_value_filter" value="4.5" type="double" />
+
     <param name="downsample" value="4" type="int" />
 
-    <param name="camera_fps" value="30" type="int" />
-    <param name="objective_fps" value="30" type="int" />
+    <param name="objective_fps" value="0" type="int" />
 
     <param name="ctf_levels" value="5" type="int" />
 

@@ -115,6 +115,16 @@ private:
     int depth_pixel_scale;
 
     /**
+     * The minimum value allowed for the depth images. Values lower that this will be filter out. Set to 0
+     */
+    double min_depth_value_filter;
+
+    /**
+     * The maximum value allowed for the depth images. Values higher that this will be filter out. Set to 0
+     */
+    double max_depth_value_filter;
+
+    /**
      * The encoding of the ros message. Following REP 118 https://www.ros.org/reps/rep-0118.html this can be either
      * 16bit or 32bit. "16UC1" and "32FC1". Check sensor_msgs/image_encoding.h to see all available encodings.
      */
