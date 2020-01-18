@@ -222,7 +222,7 @@ Configuration ready to use rosify_difodo with [RGBD SLAM](https://vision.in.tum.
 ### ros\_difodo_and_realsense_default.launch
 This launches rs_rgbd.launch from realsense2_camera and ros_difodo. Useful if you are going to use a realsense camera. It will first start the camera publishing with the default parameters and then difodo.
 
-### ros\ros\_difodo_and_realsense.launch
+### ros\_difodo_and_realsense.launch
 The same as the previous but it will start the local rs_rgbd.launch within ros_difodo, so local changes and configuration can be applied there.
 
 ### rs_rgbd.launch
