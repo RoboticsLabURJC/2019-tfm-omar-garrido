@@ -25,11 +25,16 @@
 #include <opencv2/core.hpp>
 #include <mrpt/vision/CDifodo.h>
 
+#include <fstream>
+#include <iostream>
+#include <time.h>
+
 
 class CROSDifodo : public mrpt::vision::CDifodo {
 
 public:
     CROSDifodo();
+    ~CROSDifodo();
 
     /**
      * Initialize all values needed by the DifOdo algorithm.
@@ -214,6 +219,12 @@ private:
      * Time to store the time of the last ros depth image message.
      */
     ros::Time last_depth_image_time;
+
+    /**
+     * Output file stream
+     */
+    std::ofstream output_file;
+
 
     /**
      * Executes the difodo algorithm in a loop until is cancelled
