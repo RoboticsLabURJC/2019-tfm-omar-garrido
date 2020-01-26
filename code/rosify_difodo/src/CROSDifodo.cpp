@@ -342,6 +342,7 @@ void CROSDifodo::loadInnerConfiguration() {
 
 void CROSDifodo::loadFrame() {
     // Check if resize is needed
+    double t0 = (double) cv::getTickCount(); //OGM
     if (this->downsample != 1) {
         double resize_factor = 1.f / this->downsample;
         cv::resize(this->cv_copy_ptr->image, this->cv_copy_ptr->image, cv::Size(), resize_factor, resize_factor);
@@ -349,6 +350,8 @@ void CROSDifodo::loadFrame() {
 
     // Load in the depth image so the DIFODO algorithm can used it to process the algorithm
     cvBrigdeToMRPTMat(this->cv_copy_ptr, this->depth_wf);
+    double time_waste = ((double) cv::getTickCount() - t0) / cv::getTickFrequency() * 1000; //OGM
+    ROS_INFO_STREAM("OGM::TIME READING FRAME:: " << time_waste << "ms");
 }
 
 void CROSDifodo::start() {
@@ -364,6 +367,10 @@ void CROSDifodo::start() {
 
     // Initialize the main thread of the algorithm Difodo
     difodo_thread = std::thread(&CROSDifodo::run_difodo, this);
+
+    // Initialize the tf listener
+    // (Note: This needs some time before actually getting the tf, in order to fill the buffer)
+    this->tfListener = new tf2_ros::TransformListener(this->tfBuffer);
 }
 
 void CROSDifodo::cancel() {
@@ -377,6 +384,7 @@ void CROSDifodo::cancel() {
 }
 
 void CROSDifodo::callbackImageDepthRaw(const sensor_msgs::Image::ConstPtr &msg) {
+    ROS_INFO("OGM: New frame received");
 #ifdef DEBUG
     if (this->is_new_frame_available) {
         ROS_WARN("Frame Dropped");
@@ -518,6 +526,62 @@ void CROSDifodo::rosMsgToMRPTMat(const sensor_msgs::Image::ConstPtr &msg) {
 //        cv_ptr->image.cols;
 }
 
+void CROSDifodo::getTransformsIfApply() {
+//    //TODO: esta funcion solo se hara una vez con el primer frame diria yo y ya que queda guardada la transformacion
+//    // para aplicarla el resto del tiempo, tambien se pueden cerrar los listener para que no malgasten recursos.
+//
+//    tf::StampedTransform transform; //TODO: esto formara parte de la clase y representara la transformacion total de el sistema de referencia deseado a odom
+//
+//    bool is_TUM_dataset = false; //Tendra que ser un parametro del launch.
+//
+//    if (is_TUM_dataset) {
+//        tf::StampedTransform tf_world_kinect;
+//        tf::StampedTransform tf_kinect_lens; //I think this is the kinect center to the lens
+//        try {
+//            this->tf_listener.lookupTransform("/world", "/kinect",
+//                                              ros::Time(0), tf_world_kinect);
+//            this->tf_listener.lookupTransform("/kinect", "/openni_camera",
+//                                              ros::Time(0), tf_kinect_lens);
+//        }
+//        catch (tf::TransformException &ex) {
+//            ROS_ERROR("%s", ex.what());
+//        }
+//
+//        // Lets add both transformations together so we reference openni_camera against world
+//        // TODO: transform = tf_world_kinect * tf_kinect_lens //o como se haga esto
+//        // TODO: Stop doing this once we get the first frame or second, or better only do it when we get the first frame
+//        //  because that would be the pose of odom initially regarding world.
+//    } else { //Check if there is a specified tf between map and odom.
+//        try {
+//            this->tf_listener.lookupTransform("/map", "/odom",
+//                                              ros::Time(0), transform);
+//        }
+//        catch (tf::TransformException &ex) {
+//            ROS_ERROR("%s", ex.what());
+//        }
+//    }
+}
+
+geometry_msgs::Pose CROSDifodo::fromMrptPoseToROSGeometryPose(double pos_x, double pos_y, double pos_z,
+                                                              double roll, double pitch, double yaw) {
+    geometry_msgs::Pose  pose;
+
+    pose.position.x = pos_x;
+    pose.position.y = pos_y;
+    pose.position.z = pos_z;
+
+    // First pass from euler angles to quaternion.
+    tf2::Quaternion quat_tf;
+    quat_tf.setRPY(roll, pitch, yaw);
+    // Orientation
+    pose.orientation.x = quat_tf.x();
+    pose.orientation.y = quat_tf.y();
+    pose.orientation.z = quat_tf.z();
+    pose.orientation.w = quat_tf.w();
+
+    return pose;
+}
+
 geometry_msgs::TransformStamped CROSDifodo::createTransformStampedMsg(double pos_x, double pos_y, double pos_z,
                                                                       double roll, double pitch, double yaw,
                                                                       ros::Time current_time) {
@@ -539,28 +603,15 @@ geometry_msgs::TransformStamped CROSDifodo::createTransformStampedMsg(double pos
 nav_msgs::Odometry CROSDifodo::createOdometryMsg(double pos_x, double pos_y, double pos_z,
                                                  double roll, double pitch, double yaw, ros::Time current_time) {
     /*
-     * "odom" is the conventional name for the central or absolute coordinate system. We could say is the
-     * world coordinate system and is often used as the reference system for several robots.
+     * "odom" is the conventional name for the fixed frame where the robot started.
      */
     nav_msgs::Odometry odom;
     odom.header.stamp = current_time;
     odom.header.frame_id = "odom";
+    odom.child_frame_id = "base_link";
 //    odom.header.seq // This will be filled by default
-//    odom.child_frame_id
 
-    // Position
-    odom.pose.pose.position.x = pos_x;
-    odom.pose.pose.position.y = pos_y;
-    odom.pose.pose.position.z = pos_z;
-
-    // First pass from euler angles to quaternion.
-    tf2::Quaternion quat_tf;
-    quat_tf.setRPY(roll, pitch, yaw);
-    // Orientation
-    odom.pose.pose.orientation.x = quat_tf.x();
-    odom.pose.pose.orientation.y = quat_tf.y();
-    odom.pose.pose.orientation.z = quat_tf.z();
-    odom.pose.pose.orientation.w = quat_tf.w();
+    odom.pose.pose = fromMrptPoseToROSGeometryPose(pos_x, pos_y, pos_z, roll, pitch, yaw);
 
     //Covariance explained: http://manialabs.wordpress.com/2012/08/06/covariance-matrices-with-a-practical-example/
     // Both matrices are 6*6. array of double [36] for odometry.covariance while the getcovaraince() is [6, 6]
@@ -578,7 +629,6 @@ nav_msgs::Odometry CROSDifodo::createOdometryMsg(double pos_x, double pos_y, dou
      *  or referred to the robot itself which is the coordinate system "base_link". We could say that base link is
      *  moving (due to this speed) in reference to the central coordinate system called "odom".
      */
-    odom.child_frame_id = "base_link";
     odom.twist.twist.linear.x = kai_loc.vx;
     odom.twist.twist.linear.y = kai_loc.vy;
     odom.twist.twist.linear.z = kai_loc.vz;
@@ -613,7 +663,7 @@ void CROSDifodo::publishOdometryMsgs(double pos_x, double pos_y, double pos_z,
     this->odom_publisher.publish(odom_msg);
 }
 
-double CROSDifodo::control_working_rate() {
+double CROSDifodo::controlWorkingRate() {
     double working_time_ms = 0;
     double time_sleeping = (double) cv::getTickCount();
 
@@ -632,7 +682,24 @@ double CROSDifodo::control_working_rate() {
     return working_time_ms + time_sleeping;
 }
 
-void CROSDifodo::execute_iteration() {
+void CROSDifodo::writePoseToFile(double tx, double ty, double tz, double qx,  double qy, double qz,  double qw) {
+    if (output_file.is_open())
+    {
+        //https://www.quora.com/How-do-I-customize-cout-in-C++-to-print-n-digit-after-the-decimal-point-of-a-floating-point
+        output_file << std::fixed <<  std::setprecision(4) \
+                        << current_depth_image_time.toSec() << " " \
+                        << tx << " " \
+                        << ty << " " \
+                        << tz << " " \
+                        << qx << " " \
+                        << qy << " " \
+                        << qz << " " \
+                        << qw << " " \
+                        << std::endl;
+    }
+}
+
+void CROSDifodo::executeIteration() {
     // 1. Load frame if a new frame is available otherwise return and retry in the next iteration
     {
         //unlocks the mutex when goes out of scope with the destructor.
@@ -645,6 +712,8 @@ void CROSDifodo::execute_iteration() {
             return;
         }
     }
+
+    double t0 = (double) cv::getTickCount(); //OGM
 
     // 1.5 Set the frame rate between the previous frame and the current frame. This is a value used in the
     // odometryCalcuation of DIFODO algorithm, when computing temporal derivatives. Since the frame rate can vary (for
@@ -663,7 +732,7 @@ void CROSDifodo::execute_iteration() {
 
     // WARNING: For any reason, when using this method (probably due to the sleep function) the time that it takes
     // DIFODO to execute increases, compare to when is not used. from 3-4ms to 8-9ms. (A notorious time)
-    double working_time_ms = this->control_working_rate();
+    double working_time_ms = this->controlWorkingRate();
 
 
 #ifdef DEBUG
@@ -694,32 +763,45 @@ void CROSDifodo::execute_iteration() {
     this->publishOdometryMsgs(this->cam_pose.x(), this->cam_pose.y(), this->cam_pose.z(),
                               this->cam_pose.roll(), this->cam_pose.pitch(), this->cam_pose.yaw());
 
-    // 5. Write the output to the output file.
-    if (!first_iteration) {
-        if (output_file.is_open())
-        {
-            tf2::Quaternion quat_tf;
-            quat_tf.setRPY(cam_pose.roll(), cam_pose.pitch(), cam_pose.yaw());
+//----------------------------------------------------------------------------------------------------------------------------------------------
+    // 5. Get if there is one, the transformation from "map" or "world" to the "odom" frame.
+    //https://answers.ros.org/question/273205/transfer-a-pointxyz-between-frames/
+    geometry_msgs::TransformStamped transformStamped;
+    geometry_msgs::Pose  pose_transformed;
 
-            //https://www.quora.com/How-do-I-customize-cout-in-C++-to-print-n-digit-after-the-decimal-point-of-a-floating-point
-            output_file << std::fixed <<  std::setprecision(4) \
-                        << current_depth_image_time.toSec() << " " \
-                        << cam_pose.x() << " " \
-                        << cam_pose.y() << " " \
-                        << cam_pose.z() << " " \
-                        << quat_tf.x() << " " \
-                        << quat_tf.y() << " " \
-                        << quat_tf.z() << " " \
-                        << quat_tf.w() << " " \
-                        << std::endl;
+    if (!first_iteration) {
+        try {
+            // We get the transformation between frames. (world to odom frames)
+            transformStamped = tfBuffer.lookupTransform("map", "odom", //base_link will be enought as the final position
+                                                                    ros::Time(0), ros::Duration(0,100000));
         }
+        catch (tf::TransformException &ex) {
+            ROS_ERROR("%s",ex.what());
+        }
+
+
+        geometry_msgs::Pose pose_stamped_in = fromMrptPoseToROSGeometryPose(this->cam_pose.x(), this->cam_pose.y(), this->cam_pose.z(),
+                                                                             this->cam_pose.roll(), this->cam_pose.pitch(), this->cam_pose.yaw());
+        //Apply transformation to pose_stamped_in and get the pose transform on pose_transformed
+        tf2::doTransform(pose_stamped_in, pose_transformed, transformStamped);
     }
 
+
+    // 6. Write the output to the output file.
+    if (!first_iteration) {
+        this->writePoseToFile(pose_transformed.position.x, pose_transformed.position.y, pose_transformed.position.z,
+                        pose_transformed.orientation.x, pose_transformed.orientation.y, pose_transformed.orientation.z,
+                        pose_transformed.orientation.w);
+    }
+//----------------------------------------------------------------------------------------------------------------------------------------------
     if (first_iteration) first_iteration = false;
+
+    double time_waste = ((double) cv::getTickCount() - t0) / cv::getTickFrequency() * 1000; //OGM
+    ROS_INFO_STREAM("OGM::TIME:: " << time_waste << "ms");
 }
 
 void CROSDifodo::run_difodo() {
     while (!this->is_cancel) {
-        this->execute_iteration();
+        this->executeIteration();
     }
 }

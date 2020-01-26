@@ -20,6 +20,7 @@
 
 #include <nav_msgs/Odometry.h>
 #include <tf/transform_broadcaster.h>
+#include <tf/transform_listener.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
 #include <opencv2/core.hpp>
@@ -72,7 +73,7 @@ public:
      * Executes one iteration of the DIFODO algorithm, taking a new depth image if available and processing the
      * odometry.
      */
-    void execute_iteration();
+    void executeIteration();
 
 private:
     /**
@@ -95,6 +96,12 @@ private:
      * This publish the transformation required between frames (coordinate systems)
      */
     tf::TransformBroadcaster odom_broadcaster;
+
+    /**
+     * Listener to the /tf topic to be able to retrieve different transformation between frames.
+     */
+    tf2_ros::Buffer tfBuffer;
+    tf2_ros::TransformListener *tfListener;
 
     /**
      * The topic from ROS to suscribe and get depth images from
@@ -237,7 +244,7 @@ private:
      * sleep for that amount of time. If is going slower that the established frequency then it wont wait.
      * Returns the time that has taken this iteration to be process, without the time to sleep included.
      */
-    double control_working_rate();
+    double controlWorkingRate();
 
     /**
      * This callback stores the ros depth image in a queue (FIFO). So images can be used later by the
@@ -267,6 +274,25 @@ private:
      * @param msg
      */
     void rosMsgToMRPTMat(const sensor_msgs::Image::ConstPtr &msg);
+
+    /**
+     * Based on the specified configuration, gets the transforms from map/world to odom so the file created for
+     * evaluation is in the desired frame (coordinates reference system).
+     */
+    void getTransformsIfApply();
+
+    /**
+     * Transforms from a
+     * @param pos_x
+     * @param pos_y
+     * @param pos_z
+     * @param roll
+     * @param pitch
+     * @param yaw
+     * @return
+     */
+    geometry_msgs::Pose fromMrptPoseToROSGeometryPose(double pos_x, double pos_y, double pos_z,
+                                                      double roll, double pitch, double yaw);
 
     /**
      * This will create the transform over tf. It is not enough to publish the odometry messages but we also has to
@@ -313,4 +339,17 @@ private:
      */
     void publishOdometryMsgs(double pos_x, double pos_y, double pos_z,
                                          double roll, double pitch, double yaw);
+
+    /**
+     * Writes a Pose with T (tx,ty,tz) and R (qx,qy,qz,qw) as quaternion into the file created on each execution on the
+     * program. So the estimated position can be later evaluated against a groundtruth.
+     * @param tx
+     * @param ty
+     * @param tz
+     * @param qx
+     * @param qy
+     * @param qz
+     * @param qw
+     */
+    void writePoseToFile(double tx, double ty, double tz, double qx,  double qy, double qz,  double qw);
 };
