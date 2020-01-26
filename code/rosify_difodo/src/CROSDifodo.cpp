@@ -49,6 +49,7 @@ CROSDifodo::CROSDifodo() : mrpt::vision::CDifodo() {
     // Just to initialize it, the first measurement wont be accurate but the followings will be.
     last_execution_time = (double) cv::getTickCount();
 
+    log_pose_relative_to_world = false;
 
     time_t now = time(NULL);
     struct tm tstruct;
@@ -199,21 +200,47 @@ void CROSDifodo::loadConfiguration() {
 void CROSDifodo::loadInnerConfiguration() {
     // This method returns false if the value couldn be found, but we already have the default values in the constructor
     // so no need to check for it
+    bool IS_TUM_DATASET = true;
 
-    // Realsense D435 = "/camera/depth/image_rect_raw" ; TUM dataset = "/camera/depth/image"
-//    input_depth_topic = "/camera/depth/image_rect_raw";
-    input_depth_topic = "/camera/depth/image";
-    output_odom_topic = "/difodo/odometry";
+    if (IS_TUM_DATASET) {
+        // FOR TUM use this
+        log_pose_relative_to_world = true;
+        world_frame_name = "world";
+        odom_frame_name = "openni_camera";
+
+        input_depth_topic = "/camera/depth/image";
+        output_odom_topic = "/difodo/odometry";
+
+        // Realsense D435 = 74.0f ; TUM dataset = 58.5;
+        // Realsense D435 = 62.0f ; TUM dataset = 46.6;
+        fovh_degrees = 58.5f;
+        fovv_degrees = 46.6f;
+
+        // Realsense D435 = 1000 ; TUM dataset = 1 (5000 in their website and also 16bit) for the rosbag it seems 32bit and
+        // scale of 1
+        depth_pixel_scale = 1;
+
+    } else { // REALSENSE D435
+        log_pose_relative_to_world = false;
+
+        input_depth_topic = "/camera/depth/image_rect_raw";
+        output_odom_topic = "/difodo/odometry";
+
+        // Realsense D435 = 74.0f ; TUM dataset = 58.5;
+        // Realsense D435 = 62.0f ; TUM dataset = 46.6;
+        fovh_degrees = 74.0f;
+        fovv_degrees = 62.0f;
+
+        // Realsense D435 = 1000 ; TUM dataset = 1 (5000 in their website and also 16bit) for the rosbag it seems 32bit and
+        // scale of 1
+        depth_pixel_scale = 1000;
+    }
 
     rows_orig = 480;
     cols_orig = 640;
 
-    // Realsense D435 = 1000 ; TUM dataset = 1 (5000 in their website and also 16bit) for the rosbag it seems 32bit and
-    // scale of 1
-    depth_pixel_scale = 1;
-
-    min_depth_value_filter = 0.5f;
-    max_depth_value_filter = 4.5f;
+    min_depth_value_filter = 0.1f;
+    max_depth_value_filter = 7.0f;
 
     /**
      * The number of times we want to downsample the original resolution.
@@ -228,13 +255,6 @@ void CROSDifodo::loadInnerConfiguration() {
 
     rows_ctf = rows_orig / downsample;
     cols_ctf = cols_orig / downsample;
-
-    // Realsense D435 = 74.0f ; TUM dataset = 58.5;
-//    fovh_degrees = 74.0f;
-    fovh_degrees = 58.5f;
-    // Realsense D435 = 62.0f ; TUM dataset = 46.6;
-//    fovv_degrees = 62.0f;
-    fovv_degrees = 46.6f;
 
     // NOTE: I dont know why but if set to true, the algorithm doesnt work...
     fast_pyramid = false;
@@ -526,42 +546,6 @@ void CROSDifodo::rosMsgToMRPTMat(const sensor_msgs::Image::ConstPtr &msg) {
 //        cv_ptr->image.cols;
 }
 
-void CROSDifodo::getTransformsIfApply() {
-//    //TODO: esta funcion solo se hara una vez con el primer frame diria yo y ya que queda guardada la transformacion
-//    // para aplicarla el resto del tiempo, tambien se pueden cerrar los listener para que no malgasten recursos.
-//
-//    tf::StampedTransform transform; //TODO: esto formara parte de la clase y representara la transformacion total de el sistema de referencia deseado a odom
-//
-//    bool is_TUM_dataset = false; //Tendra que ser un parametro del launch.
-//
-//    if (is_TUM_dataset) {
-//        tf::StampedTransform tf_world_kinect;
-//        tf::StampedTransform tf_kinect_lens; //I think this is the kinect center to the lens
-//        try {
-//            this->tf_listener.lookupTransform("/world", "/kinect",
-//                                              ros::Time(0), tf_world_kinect);
-//            this->tf_listener.lookupTransform("/kinect", "/openni_camera",
-//                                              ros::Time(0), tf_kinect_lens);
-//        }
-//        catch (tf::TransformException &ex) {
-//            ROS_ERROR("%s", ex.what());
-//        }
-//
-//        // Lets add both transformations together so we reference openni_camera against world
-//        // TODO: transform = tf_world_kinect * tf_kinect_lens //o como se haga esto
-//        // TODO: Stop doing this once we get the first frame or second, or better only do it when we get the first frame
-//        //  because that would be the pose of odom initially regarding world.
-//    } else { //Check if there is a specified tf between map and odom.
-//        try {
-//            this->tf_listener.lookupTransform("/map", "/odom",
-//                                              ros::Time(0), transform);
-//        }
-//        catch (tf::TransformException &ex) {
-//            ROS_ERROR("%s", ex.what());
-//        }
-//    }
-}
-
 geometry_msgs::Pose CROSDifodo::fromMrptPoseToROSGeometryPose(double pos_x, double pos_y, double pos_z,
                                                               double roll, double pitch, double yaw) {
     geometry_msgs::Pose  pose;
@@ -642,12 +626,6 @@ nav_msgs::Odometry CROSDifodo::createOdometryMsg(double pos_x, double pos_y, dou
 
 void CROSDifodo::publishOdometryMsgs(double pos_x, double pos_y, double pos_z,
                                      double roll, double pitch, double yaw) {
-    // In order to be correctly visualize by RVIZ, I have to change "y" and "z" translations and rotations sign
-    pos_y = -pos_y;
-    pos_z = -pos_z;
-    pitch = -pitch;
-    yaw = -yaw;
-
     ros::Time current_time = ros::Time::now();
 
     // ********************PUBLISHING THE TRANSFORMATION BETWEEN FRAMES********************
@@ -680,6 +658,65 @@ double CROSDifodo::controlWorkingRate() {
     time_sleeping = ((double) cv::getTickCount() - time_sleeping) / cv::getTickFrequency() * 1000;
     this->last_execution_time = (double) cv::getTickCount();
     return working_time_ms + time_sleeping;
+}
+
+void CROSDifodo::logTimesOfExecution(double working_time_ms) {
+    // Compute the working time or working frame rate
+    float working_fps = 1000 / working_time_ms;
+
+    if (objective_fps != 0) {
+        // Add an offset in the FPS of 0.5 so if is working at 29.98 instead of 30 FPS we dont raise any warning
+        if (working_fps + 0.5 < this->objective_fps) {
+            ROS_WARN_STREAM("The algorithm cannot handle objective_fps configured, "
+                            "running at (" << working_fps << ") FPS");
+        }
+
+        if (this->execution_time > (1000 / this->objective_fps)) {
+            ROS_WARN_STREAM("The algorithm takes more time to process an image than the objective_fps configured"
+            );
+        }
+    }
+
+    ROS_INFO_STREAM("Execution time of DifOdo only " << this->execution_time << " ms");
+    ROS_INFO_STREAM("Executing at:                 " << working_time_ms << " ms");
+    ROS_INFO_STREAM("Working at FPS:               " << working_fps << " FPS");
+    //Print Pose
+    ROS_INFO_STREAM("New pose" << this->cam_pose);
+}
+
+void CROSDifodo::getTransform() {
+    // Acquire the current position and orientation of the desired frame, in order to use it to transform the odometry
+    // from DIFODO to the "world"/"map" frame.
+    if (first_iteration) {
+        try {
+            // We get the transformation between frames. (world to odom frames)
+            transformStamped = tfBuffer.lookupTransform(this->world_frame_name, this->odom_frame_name,
+                                                        ros::Time(0), ros::Duration(0,100000));
+            ROS_INFO_STREAM(transformStamped);
+        }
+        catch (tf::TransformException &ex) {
+            ROS_ERROR("%s",ex.what());
+            ROS_ERROR("One of the frames specified seem not to be found on the /tf topic. If you dont want to apply any"
+                      " tranformation to generate the log file against the 'world' frame instead of 'odom' then set "
+                      "'log_pose_relative_to_world' configuration parameter to false");
+            exit(-1);
+        }
+    }
+}
+
+geometry_msgs::Pose CROSDifodo::getPoseTransformed() {
+    //https://answers.ros.org/question/273205/transfer-a-pointxyz-between-frames/
+    geometry_msgs::Pose pose_stamped_in;
+    geometry_msgs::Pose pose_transformed;
+
+    if (!first_iteration) { //TODO: Check that there is transformStamped (null or something)
+        pose_stamped_in = fromMrptPoseToROSGeometryPose(this->cam_pose.x(), -this->cam_pose.y(), -this->cam_pose.z(),
+                                                        this->cam_pose.roll(), -this->cam_pose.pitch(), -this->cam_pose.yaw());
+        //Apply transformation to pose_stamped_in and get the pose transform on pose_transformed
+        tf2::doTransform(pose_stamped_in, pose_transformed, transformStamped);
+    }
+
+    return pose_transformed;
 }
 
 void CROSDifodo::writePoseToFile(double tx, double ty, double tz, double qx,  double qy, double qz,  double qw) {
@@ -727,73 +764,46 @@ void CROSDifodo::executeIteration() {
     // 2. Compute and publish odometry
     this->odometryCalculation();
 
+    // 2.5 The pose estimated from DIFODO seem to be with the Y and Z axis inverted. We inverted them here so the pose is
+    // the correct one.
+    // In order to be correctly visualize by RVIZ, I have to change "y" and "z" translations and rotations sign
+    //TODO: Invertir ejes Y, Z
+
     // 3. Control the working rate: Wait the time needed to publish at the constant rate specified
     // Compute the working time or working frame rate.
-
-    // WARNING: For any reason, when using this method (probably due to the sleep function) the time that it takes
-    // DIFODO to execute increases, compare to when is not used. from 3-4ms to 8-9ms. (A notorious time)
     double working_time_ms = this->controlWorkingRate();
 
-
 #ifdef DEBUG
-    // Compute the working time or working frame rate
-    float working_fps = 1000 / working_time_ms;
-
-    if (objective_fps != 0) {
-        // Add an offset in the FPS of 0.5 so if is working at 29.98 instead of 30 FPS we dont raise any warning
-        if (working_fps + 0.5 < this->objective_fps) {
-            ROS_WARN_STREAM("The algorithm cannot handle objective_fps configured, "
-                            "running at (" << working_fps << ") FPS");
-        }
-
-        if (this->execution_time > (1000 / this->objective_fps)) {
-            ROS_WARN_STREAM("The algorithm takes more time to process an image than the objective_fps configured"
-            );
-        }
-    }
-
-    ROS_INFO_STREAM("Execution time of DifOdo only " << this->execution_time << " ms");
-    ROS_INFO_STREAM("Executing at:                 " << working_time_ms << " ms");
-    ROS_INFO_STREAM("Working at FPS:               " << working_fps << " FPS");
-    //Print Pose
-    ROS_INFO_STREAM("New pose" << this->cam_pose);
+    this->logTimesOfExecution(working_time_ms);
 #endif
 
     // 4. Publish the odometry messages and transforms.
     this->publishOdometryMsgs(this->cam_pose.x(), this->cam_pose.y(), this->cam_pose.z(),
                               this->cam_pose.roll(), this->cam_pose.pitch(), this->cam_pose.yaw());
 
-//----------------------------------------------------------------------------------------------------------------------------------------------
+
     // 5. Get if there is one, the transformation from "map" or "world" to the "odom" frame.
-    //https://answers.ros.org/question/273205/transfer-a-pointxyz-between-frames/
-    geometry_msgs::TransformStamped transformStamped;
-    geometry_msgs::Pose  pose_transformed;
-
-    if (!first_iteration) {
-        try {
-            // We get the transformation between frames. (world to odom frames)
-            transformStamped = tfBuffer.lookupTransform("map", "odom", //base_link will be enought as the final position
-                                                                    ros::Time(0), ros::Duration(0,100000));
+    if (log_pose_relative_to_world) {
+        geometry_msgs::Pose pose_transformed;
+        if (first_iteration) {
+            this->getTransform();
+        } else {
+            pose_transformed = this->getPoseTransformed();
+            // 6. Write the output to the output file.
+            this->writePoseToFile(pose_transformed.position.x, pose_transformed.position.y, pose_transformed.position.z,
+                                  pose_transformed.orientation.x, pose_transformed.orientation.y, pose_transformed.orientation.z,
+                                  pose_transformed.orientation.w);
         }
-        catch (tf::TransformException &ex) {
-            ROS_ERROR("%s",ex.what());
-        }
+    } else {
+        geometry_msgs::Pose odometry_estimated_pose =
+                this->fromMrptPoseToROSGeometryPose(this->cam_pose.x(), this->cam_pose.y(), this->cam_pose.z(),
+                                                    this->cam_pose.roll(), this->cam_pose.pitch(), this->cam_pose.yaw());
 
-
-        geometry_msgs::Pose pose_stamped_in = fromMrptPoseToROSGeometryPose(this->cam_pose.x(), this->cam_pose.y(), this->cam_pose.z(),
-                                                                             this->cam_pose.roll(), this->cam_pose.pitch(), this->cam_pose.yaw());
-        //Apply transformation to pose_stamped_in and get the pose transform on pose_transformed
-        tf2::doTransform(pose_stamped_in, pose_transformed, transformStamped);
+        this->writePoseToFile(odometry_estimated_pose.position.x, odometry_estimated_pose.position.y, odometry_estimated_pose.position.z,
+                              odometry_estimated_pose.orientation.x, odometry_estimated_pose.orientation.y, odometry_estimated_pose.orientation.z,
+                              odometry_estimated_pose.orientation.w);
     }
 
-
-    // 6. Write the output to the output file.
-    if (!first_iteration) {
-        this->writePoseToFile(pose_transformed.position.x, pose_transformed.position.y, pose_transformed.position.z,
-                        pose_transformed.orientation.x, pose_transformed.orientation.y, pose_transformed.orientation.z,
-                        pose_transformed.orientation.w);
-    }
-//----------------------------------------------------------------------------------------------------------------------------------------------
     if (first_iteration) first_iteration = false;
 
     double time_waste = ((double) cv::getTickCount() - t0) / cv::getTickFrequency() * 1000; //OGM

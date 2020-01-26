@@ -104,6 +104,27 @@ private:
     tf2_ros::TransformListener *tfListener;
 
     /**
+     * The transform that will be applied to the pose estimated to generate the evaluation file
+     */
+    geometry_msgs::TransformStamped transformStamped;
+
+    /**
+     * If true the generated pose will be transform to the 'world_frame_name' specified and this pose will be log in
+     * the output_file.
+     */
+    bool log_pose_relative_to_world;
+
+    /**
+     * The name of the world frame
+     */
+    std::string world_frame_name;
+
+    /**
+     * The name of the odometry frame.
+     */
+    std::string odom_frame_name;
+
+    /**
      * The topic from ROS to suscribe and get depth images from
      */
     std::string input_depth_topic;
@@ -276,12 +297,6 @@ private:
     void rosMsgToMRPTMat(const sensor_msgs::Image::ConstPtr &msg);
 
     /**
-     * Based on the specified configuration, gets the transforms from map/world to odom so the file created for
-     * evaluation is in the desired frame (coordinates reference system).
-     */
-    void getTransformsIfApply();
-
-    /**
      * Transforms from a
      * @param pos_x
      * @param pos_y
@@ -339,6 +354,27 @@ private:
      */
     void publishOdometryMsgs(double pos_x, double pos_y, double pos_z,
                                          double roll, double pitch, double yaw);
+
+    /**
+     * Logs in ROS logs several metrics about exucution times. Like the time spend on difodo, on the entire algorithm,
+     * the current FPS...
+     * @param working_time_ms: The time that has taken the algorithm to process one iteration from the previous one.
+     * (includes time sleeping, time waiting for a new frame to arrive...)
+     */
+    void logTimesOfExecution(double working_time_ms);
+
+    /**
+     * Gets the transform from source frame to target frame and apply it to the pose estimated. The source frame would
+     * be the "world" and the target should be the "odom" starting point. That way if odom is started on a Pose in the
+     * "world" this can be applied and the camera position is retrieved relative to the world.
+     * @return The Pose relative to the "world"
+     */
+    void getTransform();
+
+    /**
+     * Gets the pose transformed, relative to world instead of the original pose relative to odom frame.
+     */
+    geometry_msgs::Pose getPoseTransformed();
 
     /**
      * Writes a Pose with T (tx,ty,tz) and R (qx,qy,qz,qw) as quaternion into the file created on each execution on the
