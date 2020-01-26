@@ -566,26 +566,24 @@ geometry_msgs::Pose CROSDifodo::fromMrptPoseToROSGeometryPose(double pos_x, doub
     return pose;
 }
 
-geometry_msgs::TransformStamped CROSDifodo::createTransformStampedMsg(double pos_x, double pos_y, double pos_z,
-                                                                      double roll, double pitch, double yaw,
-                                                                      ros::Time current_time) {
-    geometry_msgs::Quaternion odom_quat = tf::createQuaternionMsgFromRollPitchYaw(roll, pitch, yaw);
-
+geometry_msgs::TransformStamped CROSDifodo::createTransformStampedMsg(geometry_msgs::Pose pose, ros::Time current_time) {
     geometry_msgs::TransformStamped odom_trans;
     odom_trans.header.stamp = current_time;
     odom_trans.header.frame_id = "odom";
     odom_trans.child_frame_id = "base_link";
 
-    odom_trans.transform.translation.x = pos_x;
-    odom_trans.transform.translation.y = pos_y;
-    odom_trans.transform.translation.z = pos_z;
-    odom_trans.transform.rotation = odom_quat;
+    odom_trans.transform.translation.x = pose.position.x;
+    odom_trans.transform.translation.y = pose.position.y;
+    odom_trans.transform.translation.z = pose.position.z;
+    odom_trans.transform.rotation.x = pose.orientation.x;
+    odom_trans.transform.rotation.y = pose.orientation.y;
+    odom_trans.transform.rotation.z = pose.orientation.z;
+    odom_trans.transform.rotation.w = pose.orientation.w;
 
     return odom_trans;
 }
 
-nav_msgs::Odometry CROSDifodo::createOdometryMsg(double pos_x, double pos_y, double pos_z,
-                                                 double roll, double pitch, double yaw, ros::Time current_time) {
+nav_msgs::Odometry CROSDifodo::createOdometryMsg(geometry_msgs::Pose pose, ros::Time current_time) {
     /*
      * "odom" is the conventional name for the fixed frame where the robot started.
      */
@@ -595,7 +593,7 @@ nav_msgs::Odometry CROSDifodo::createOdometryMsg(double pos_x, double pos_y, dou
     odom.child_frame_id = "base_link";
 //    odom.header.seq // This will be filled by default
 
-    odom.pose.pose = fromMrptPoseToROSGeometryPose(pos_x, pos_y, pos_z, roll, pitch, yaw);
+    odom.pose.pose = pose;
 
     //Covariance explained: http://manialabs.wordpress.com/2012/08/06/covariance-matrices-with-a-practical-example/
     // Both matrices are 6*6. array of double [36] for odometry.covariance while the getcovaraince() is [6, 6]
@@ -624,19 +622,18 @@ nav_msgs::Odometry CROSDifodo::createOdometryMsg(double pos_x, double pos_y, dou
     return odom;
 }
 
-void CROSDifodo::publishOdometryMsgs(double pos_x, double pos_y, double pos_z,
-                                     double roll, double pitch, double yaw) {
+void CROSDifodo::publishOdometryMsgs(geometry_msgs::Pose pose) {
     ros::Time current_time = ros::Time::now();
 
     // ********************PUBLISHING THE TRANSFORMATION BETWEEN FRAMES********************
     geometry_msgs::TransformStamped odom_trans =
-            CROSDifodo::createTransformStampedMsg(pos_x, pos_y, pos_z, roll, pitch, yaw, current_time);
+            CROSDifodo::createTransformStampedMsg(pose, current_time);
 
     //send the transform
     odom_broadcaster.sendTransform(odom_trans);
 
     // ********************PUBLISHING THE ODOMETRY MESSAGE IN ROS********************
-    nav_msgs::Odometry odom_msg = createOdometryMsg(pos_x, pos_y, pos_z, roll, pitch, yaw, current_time);
+    nav_msgs::Odometry odom_msg = createOdometryMsg(pose, current_time);
     //Publish the message
     this->odom_publisher.publish(odom_msg);
 }
@@ -704,21 +701,6 @@ void CROSDifodo::getTransform() {
     }
 }
 
-geometry_msgs::Pose CROSDifodo::getPoseTransformed() {
-    //https://answers.ros.org/question/273205/transfer-a-pointxyz-between-frames/
-    geometry_msgs::Pose pose_stamped_in;
-    geometry_msgs::Pose pose_transformed;
-
-    if (!first_iteration) { //TODO: Check that there is transformStamped (null or something)
-        pose_stamped_in = fromMrptPoseToROSGeometryPose(this->cam_pose.x(), -this->cam_pose.y(), -this->cam_pose.z(),
-                                                        this->cam_pose.roll(), -this->cam_pose.pitch(), -this->cam_pose.yaw());
-        //Apply transformation to pose_stamped_in and get the pose transform on pose_transformed
-        tf2::doTransform(pose_stamped_in, pose_transformed, transformStamped);
-    }
-
-    return pose_transformed;
-}
-
 void CROSDifodo::writePoseToFile(double tx, double ty, double tz, double qx,  double qy, double qz,  double qw) {
     if (output_file.is_open())
     {
@@ -767,7 +749,8 @@ void CROSDifodo::executeIteration() {
     // 2.5 The pose estimated from DIFODO seem to be with the Y and Z axis inverted. We inverted them here so the pose is
     // the correct one.
     // In order to be correctly visualize by RVIZ, I have to change "y" and "z" translations and rotations sign
-    //TODO: Invertir ejes Y, Z
+    geometry_msgs::Pose pose_inverted = fromMrptPoseToROSGeometryPose(this->cam_pose.x(), -this->cam_pose.y(), -this->cam_pose.z(),
+                                                    this->cam_pose.roll(), -this->cam_pose.pitch(), -this->cam_pose.yaw());
 
     // 3. Control the working rate: Wait the time needed to publish at the constant rate specified
     // Compute the working time or working frame rate.
@@ -778,30 +761,29 @@ void CROSDifodo::executeIteration() {
 #endif
 
     // 4. Publish the odometry messages and transforms.
-    this->publishOdometryMsgs(this->cam_pose.x(), this->cam_pose.y(), this->cam_pose.z(),
-                              this->cam_pose.roll(), this->cam_pose.pitch(), this->cam_pose.yaw());
-
+    this->publishOdometryMsgs(pose_inverted);
 
     // 5. Get if there is one, the transformation from "map" or "world" to the "odom" frame.
     if (log_pose_relative_to_world) {
-        geometry_msgs::Pose pose_transformed;
         if (first_iteration) {
             this->getTransform();
         } else {
-            pose_transformed = this->getPoseTransformed();
+            //https://answers.ros.org/question/273205/transfer-a-pointxyz-between-frames/
+            geometry_msgs::Pose pose_transformed;
+
+            //TODO: Check that there is transformStamped (null or something)
+            //Apply transformation to pose_stamped_in and get the pose transform on pose_transformed
+            tf2::doTransform(pose_inverted, pose_transformed, transformStamped);
+
             // 6. Write the output to the output file.
             this->writePoseToFile(pose_transformed.position.x, pose_transformed.position.y, pose_transformed.position.z,
                                   pose_transformed.orientation.x, pose_transformed.orientation.y, pose_transformed.orientation.z,
                                   pose_transformed.orientation.w);
         }
     } else {
-        geometry_msgs::Pose odometry_estimated_pose =
-                this->fromMrptPoseToROSGeometryPose(this->cam_pose.x(), this->cam_pose.y(), this->cam_pose.z(),
-                                                    this->cam_pose.roll(), this->cam_pose.pitch(), this->cam_pose.yaw());
-
-        this->writePoseToFile(odometry_estimated_pose.position.x, odometry_estimated_pose.position.y, odometry_estimated_pose.position.z,
-                              odometry_estimated_pose.orientation.x, odometry_estimated_pose.orientation.y, odometry_estimated_pose.orientation.z,
-                              odometry_estimated_pose.orientation.w);
+        this->writePoseToFile(pose_inverted.position.x, pose_inverted.position.y, pose_inverted.position.z,
+                              pose_inverted.orientation.x, pose_inverted.orientation.y, pose_inverted.orientation.z,
+                              pose_inverted.orientation.w);
     }
 
     if (first_iteration) first_iteration = false;

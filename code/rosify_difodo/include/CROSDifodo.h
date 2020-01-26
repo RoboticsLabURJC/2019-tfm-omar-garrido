@@ -317,43 +317,24 @@ private:
      * "base_link" is the robot coordinate system. So when we express the transformation between the odom (which is
      * static, we could think of it as the map, which is another default frame used usually in ROS) we must use the pose
      * estimation to define base_link in reference to odom.
-     * @param pos_x
-     * @param pos_y
-     * @param pos_z
-     * @param roll
-     * @param pitch
-     * @param yaw
+     * @param pose
      * @param current_time
      * @return
      */
-    static geometry_msgs::TransformStamped createTransformStampedMsg(double pos_x, double pos_y, double pos_z,
-                                                                          double roll, double pitch, double yaw,
-                                                                          ros::Time current_time);
+    static geometry_msgs::TransformStamped createTransformStampedMsg(geometry_msgs::Pose pose, ros::Time current_time);
 
     /**
      * Creates a ros odometry message from a pose estimation of DIFODO.
-     * @param pos_x
-     * @param pos_y
-     * @param pos_z
-     * @param roll
-     * @param pitch
-     * @param yaw
+     * @param pose
      * @return A ros Odometry message
      */
-    nav_msgs::Odometry createOdometryMsg(double pos_x, double pos_y, double pos_z,
-                                         double roll, double pitch, double yaw, ros::Time current_time);
+    nav_msgs::Odometry createOdometryMsg(geometry_msgs::Pose pose, ros::Time current_time);
 
     /**
-     * Publish the Odometry information (messages and transformations between frames)
-     * @param pos_x
-     * @param pos_y
-     * @param pos_z
-     * @param roll
-     * @param pitch
-     * @param yaw
+     * * Publish the Odometry information (messages and transformations between frames)
+     * @param pose: Last Pose of the odometry
      */
-    void publishOdometryMsgs(double pos_x, double pos_y, double pos_z,
-                                         double roll, double pitch, double yaw);
+    void publishOdometryMsgs(geometry_msgs::Pose pose);
 
     /**
      * Logs in ROS logs several metrics about exucution times. Like the time spend on difodo, on the entire algorithm,
@@ -370,11 +351,6 @@ private:
      * @return The Pose relative to the "world"
      */
     void getTransform();
-
-    /**
-     * Gets the pose transformed, relative to world instead of the original pose relative to odom frame.
-     */
-    geometry_msgs::Pose getPoseTransformed();
 
     /**
      * Writes a Pose with T (tx,ty,tz) and R (qx,qy,qz,qw) as quaternion into the file created on each execution on the
