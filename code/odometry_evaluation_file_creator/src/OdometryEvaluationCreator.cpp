@@ -113,8 +113,8 @@ void OdometryEvaluationCreator::writePoseToFile(double tx, double ty, double tz,
                         << qx << " " \
                         << qy << " " \
                         << qz << " " \
-                        << qw << " " \
-                        << std::endl;
+                        << qw << std::endl;
+
     }
 }
 
