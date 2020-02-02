@@ -1,10 +1,7 @@
-%YAML:1.0
-
+%YAML 1.0
+---
 odometry_topic: /difodo/odometry
 source_frame: openni_camera
 target_frame: world
-output_file_dir: /home/omar/workspaces/TFM/2019-tfm-omar-garrido-master/code/odometry_evaluation_file_creator/output
-
-
-
+output_file_dir: /home/omar/Documents
 

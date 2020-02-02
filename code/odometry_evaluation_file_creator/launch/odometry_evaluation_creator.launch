@@ -2,7 +2,7 @@
     <!--Package is the name of the package as in the package.xml is defined, type is the node name that is the name of
     the executable created, finally name is just a given name (Just the name you will see when using "rosnode list").
     output=screen is meant to redirect the stdout or logs to the terminal where the launch was made.-->
-    <rosparam command="load" file="$(find my_package)/launch/config/evaluator_config.yaml)"/>
+    <rosparam command="load" file="$(find odometry_evaluation_file_creator)/launch/config/evaluator_config.yaml"/>
     <node pkg="odometry_evaluation_file_creator" type="odometry_evaluation_file_creator" name="odometry_evaluation_file_creator_node" output="screen"/>
 
 </launch>

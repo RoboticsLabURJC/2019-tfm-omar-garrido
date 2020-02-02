@@ -5,9 +5,13 @@
 #include "OdometryEvaluationCreator.h"
 
 OdometryEvaluationCreator::OdometryEvaluationCreator() {
-    this->odometry_topic = "/difodo/odometry";
-    this->source_frame = "openni_camera";
-    this->target_frame = "world";
+//    this->odometry_topic = "/difodo/odometry";
+//    this->source_frame = "openni_camera";
+//    this->target_frame = "world";
+//    this->output_file_dir = "";
+    this->odometry_topic = "";
+    this->source_frame = "";
+    this->target_frame = "";
     this->output_file_dir = "";
     this->is_first_time = true;
 }
@@ -22,8 +26,18 @@ void OdometryEvaluationCreator::loadConfiguration(bool use_local_config, std::st
         this->readConfigurationYAML(config_file_path);
     } else {
         // Use the configuration that is on the parameters server (using launch files)
-        //TODO
+        this->readConfigurationFromParameterServer();
     }
+
+    ROS_INFO_STREAM(std::endl <<
+                              "---------------------------------------------------------" << std::endl <<
+                              "             CONFIGURATION PARAMETERS LOADED" << std::endl <<
+                              "---------------------------------------------------------" << std::endl <<
+                              "odometry_topic: " << this->odometry_topic << std::endl <<
+                              "source_frame: " << this->source_frame << std::endl <<
+                              "target_frame: " << this->target_frame << std::endl <<
+                              "output_file_dir: " << this->output_file_dir << std::endl);
+
 
     // Output file creation
     time_t now = time(NULL);
@@ -124,10 +138,8 @@ void OdometryEvaluationCreator::readConfigurationYAML(std::string filename) {
     fs["target_frame"] >> this->target_frame;
     fs["output_file_dir"] >> this->output_file_dir;
 
-
     // Example on how to go deep in the tree Camera.Width
 //    if (fs["Camera.Width"].isNamed()) fs["Camera.Width"] >> camera_params_.w;
-
 
     fs.release();
 }

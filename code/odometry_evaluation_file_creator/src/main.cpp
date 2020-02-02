@@ -21,7 +21,7 @@ int main(int argc, char **argv) {
         odom_eval_creator.loadConfiguration(true, std::string(argv[2]));
     } else {
         ROS_INFO_STREAM("Using configuration within parameter server instead of local file");
-        odom_eval_creator.loadConfiguration(true, "");
+        odom_eval_creator.loadConfiguration(false, "");
     }
 
     // ROS SPIN MANAGEMENT
