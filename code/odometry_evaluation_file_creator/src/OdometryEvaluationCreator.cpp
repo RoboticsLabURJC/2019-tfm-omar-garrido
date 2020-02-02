@@ -8,9 +8,24 @@ OdometryEvaluationCreator::OdometryEvaluationCreator() {
     this->odometry_topic = "/difodo/odometry";
     this->source_frame = "openni_camera";
     this->target_frame = "world";
-    this->output_file_path = ""; //TODO retrieve from arguments.
+    this->output_file_dir = "";
     this->is_first_time = true;
+}
 
+OdometryEvaluationCreator::~OdometryEvaluationCreator() {
+    if (output_file.is_open()) output_file.close();
+}
+
+void OdometryEvaluationCreator::loadConfiguration(bool use_local_config, std::string config_file_path) {
+    // Read configuration parameters
+    if (use_local_config) {
+        this->readConfigurationYAML(config_file_path);
+    } else {
+        // Use the configuration that is on the parameters server (using launch files)
+        //TODO
+    }
+
+    // Output file creation
     time_t now = time(NULL);
     struct tm tstruct;
     char buf[40];
@@ -18,20 +33,20 @@ OdometryEvaluationCreator::OdometryEvaluationCreator() {
     //format: day DD-MM-YYYY
     strftime(buf, sizeof(buf), "%d_%m_%Y-%H_%M_%S", &tstruct);
     std::string filename = std::string(buf) + "_odometry_evaluation_output.txt";
-    output_file.open(filename);
+
+    std::string file_path;
+    if (this->output_file_dir != "") {
+        file_path = this->output_file_dir + "/" + filename;
+    } else {
+        file_path = filename;
+    }
+    output_file.open(file_path);
+    ROS_INFO_STREAM("Output file has been created on: " << file_path);
+
     if (!output_file) {
-        ROS_ERROR_STREAM("Output file couldn be created");
+        ROS_ERROR_STREAM("Output file could not be created");
         exit(-1);
     }
-}
-
-OdometryEvaluationCreator::~OdometryEvaluationCreator() {
-    if (output_file.is_open()) output_file.close();
-}
-
-void OdometryEvaluationCreator::loadConfiguration() {
-    // Read configuration parameters
-    //TODO
 
     // INITIALIZATION
     this->odometry_sub = this->n.subscribe(this->odometry_topic,
@@ -43,8 +58,7 @@ void OdometryEvaluationCreator::loadConfiguration() {
 }
 
 void OdometryEvaluationCreator::odometryCallback(const nav_msgs::Odometry::ConstPtr& msg) {
-    ROS_INFO_STREAM("LLEGA ODOMETRIA");
-
+    ROS_INFO_STREAM("Processing odometry message with timestamp " << msg->header.stamp);
     this->odom_msg_time = msg->header.stamp;
 
     // We only want to take the first transformation, either is the moment where the odometry started or is a tf_static
@@ -88,4 +102,40 @@ void OdometryEvaluationCreator::writePoseToFile(double tx, double ty, double tz,
                         << qw << " " \
                         << std::endl;
     }
+}
+
+void OdometryEvaluationCreator::readConfigurationYAML(std::string filename) {
+    cv::FileStorage fs;
+
+    try {
+        // Read config file
+        fs.open(filename.c_str(), cv::FileStorage::READ);
+        if (!fs.isOpened()) {
+            ROS_ERROR("Failed to open file: %s", filename.c_str());
+            exit(-1);
+        }
+    } catch(cv::Exception &ex) {
+        ROS_ERROR("Parse error: %s", ex.what());
+        exit(-1);
+    }
+
+    fs["odometry_topic"] >> this->odometry_topic;
+    fs["source_frame"] >> this->source_frame;
+    fs["target_frame"] >> this->target_frame;
+    fs["output_file_dir"] >> this->output_file_dir;
+
+
+    // Example on how to go deep in the tree Camera.Width
+//    if (fs["Camera.Width"].isNamed()) fs["Camera.Width"] >> camera_params_.w;
+
+
+    fs.release();
+}
+
+void OdometryEvaluationCreator::readConfigurationFromParameterServer() {
+    ros::param::get("/odometry_topic", this->odometry_topic);
+    ros::param::get("/source_frame", this->source_frame);
+    ros::param::get("/target_frame", this->target_frame);
+    ros::param::get("/output_file_dir", this->output_file_dir);
+
 }

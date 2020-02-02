@@ -7,15 +7,16 @@
 
 #include <ros/ros.h>
 #include <fstream>
+#include <opencv2/core/core.hpp>
 #include <nav_msgs/Odometry.h>
-#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <tf/transform_listener.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
 class OdometryEvaluationCreator {
 public:
     OdometryEvaluationCreator();
     ~OdometryEvaluationCreator();
-    void loadConfiguration();
+    void loadConfiguration(bool use_local_config, std::string config_file_path);
 
     ros::NodeHandle n;
     // Load parameters from YAML or parameter server is created with a launch.
@@ -25,7 +26,7 @@ public:
     // The frame that we wont to transform to
     std::string target_frame = "";
     // Do this parameters default but also allow to change for another one.
-    std::string output_file_path = "";
+    std::string output_file_dir = "";
 
     std::ofstream output_file;
 
@@ -44,6 +45,8 @@ public:
 private:
     void odometryCallback(const nav_msgs::Odometry::ConstPtr& msg);
     void writePoseToFile(double tx, double ty, double tz, double qx,  double qy, double qz,  double qw);
+    void readConfigurationYAML(std::string filename);
+    void readConfigurationFromParameterServer();
 
 };
 

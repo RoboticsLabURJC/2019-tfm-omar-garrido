@@ -14,6 +14,8 @@ find_package(catkin REQUIRED COMPONENTS
   tf2
 )
 
+find_package(OpenCV REQUIRED)
+
 ###################################
 ## catkin specific configuration ##
 ###################################
@@ -44,4 +46,4 @@ include_directories(
 
 # MAIN PROGRAM TARGET CROSDIFODO
 add_executable(odometry_evaluation_file_creator src/main.cpp src/OdometryEvaluationCreator.cpp include/OdometryEvaluationCreator.h)
-target_link_libraries(odometry_evaluation_file_creator ${catkin_LIBRARIES}) #${OpenCV_LIBS})
+target_link_libraries(odometry_evaluation_file_creator ${catkin_LIBRARIES} ${OpenCV_LIBS})
