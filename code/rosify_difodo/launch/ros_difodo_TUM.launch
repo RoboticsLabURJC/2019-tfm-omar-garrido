@@ -25,4 +25,6 @@
     <param name="fovv_degrees" value="46.6" type="double" />
 
     <param name="fast_pyramid" value="false" type="bool" />
+
+    <param name="use_depth_images_timestamp" value="true" type="bool" />
 </launch>

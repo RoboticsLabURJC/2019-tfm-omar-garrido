@@ -73,7 +73,7 @@ or
 **sudo apt install ros-kinetic-rgbd-launch**
 
 
-## Install
+## Install as a ros package
 **First get the code from github:**
 ```
 git clone https://github.com/RoboticsLabURJC/2019-tfm-omar-garrido.git
@@ -215,6 +215,7 @@ This node is primarily used to set up the parameters from the difodo algorithm. 
 - **fovh_degrees**: FOV horizontal of the camera
 - **fovv_degrees**: FOV vertical of the camera
 - **fast_pyramid**: Use a fast pyramid to build the image pyramid. Defautl to false(NOTE: Leave as default otherwise it will fail)
+- **use_depth_images_timestamp**: If true it will use the depth images timestamps for the odometry messages being publish, instead of the current time. False otherwise. This is useful when we want to create an evaluation time using the same timestamps that the groundtruth have, so they can be evaluated later by evaluation tools such as EVO. (Use when using with RGBD TUM dataset to create groundtruth files that can be evaluated later)
 
 ### ros\_difodo_TUM.launch
 Configuration ready to use rosify_difodo with [RGBD SLAM](https://vision.in.tum.de/data/datasets/rgbd-dataset/download) dataset from TUM.

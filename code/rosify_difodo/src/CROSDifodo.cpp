@@ -49,6 +49,8 @@ CROSDifodo::CROSDifodo() : mrpt::vision::CDifodo() {
     // Just to initialize it, the first measurement wont be accurate but the followings will be.
     last_execution_time = (double) cv::getTickCount();
 
+    use_depth_images_timestamp = false;
+
 
     time_t now = time(NULL);
     struct tm tstruct;
@@ -102,6 +104,8 @@ void CROSDifodo::loadConfiguration() {
 
     ros::param::get("/fast_pyramid", fast_pyramid);
 
+    ros::param::get("/use_depth_images_timestamp", use_depth_images_timestamp);
+
     ROS_INFO_STREAM(std::endl <<
                               "---------------------------------------------------------" << std::endl <<
                               "             CONFIGURATION PARAMETERS LOADED" << std::endl <<
@@ -115,7 +119,8 @@ void CROSDifodo::loadConfiguration() {
                               "ctf_levels " << ctf_levels << std::endl <<
                               "fovh_degrees: " << fovh_degrees << std::endl <<
                               "fovv_degrees: " << fovv_degrees << std::endl <<
-                              "fast_pyramid: " << fast_pyramid << std::endl);
+                              "fast_pyramid: " << fast_pyramid << std::endl <<
+                              "use_depth_images_timestamp: " << use_depth_images_timestamp << std::endl);
 
     /******************SET DIFODO ATTRIBUTES VALUES*****************/
     this->fovh = M_PI * fovh_degrees / 180.0;
@@ -199,21 +204,45 @@ void CROSDifodo::loadConfiguration() {
 void CROSDifodo::loadInnerConfiguration() {
     // This method returns false if the value couldn be found, but we already have the default values in the constructor
     // so no need to check for it
+    bool IS_TUM_DATASET = true;
 
-    // Realsense D435 = "/camera/depth/image_rect_raw" ; TUM dataset = "/camera/depth/image"
-//    input_depth_topic = "/camera/depth/image_rect_raw";
-    input_depth_topic = "/camera/depth/image";
-    output_odom_topic = "/difodo/odometry";
+    if (IS_TUM_DATASET) {
+        // FOR TUM use this
+         use_depth_images_timestamp = true;
+
+        input_depth_topic = "/camera/depth/image";
+        output_odom_topic = "/difodo/odometry";
+
+        // Realsense D435 = 74.0f ; TUM dataset = 58.5;
+        // Realsense D435 = 62.0f ; TUM dataset = 46.6;
+        fovh_degrees = 58.5f;
+        fovv_degrees = 46.6f;
+
+        // Realsense D435 = 1000 ; TUM dataset = 1 (5000 in their website and also 16bit) for the rosbag it seems 32bit and
+        // scale of 1
+        depth_pixel_scale = 1;
+
+    } else { // REALSENSE D435
+         use_depth_images_timestamp = false;
+
+        input_depth_topic = "/camera/depth/image_rect_raw";
+        output_odom_topic = "/difodo/odometry";
+
+        // Realsense D435 = 74.0f ; TUM dataset = 58.5;
+        // Realsense D435 = 62.0f ; TUM dataset = 46.6;
+        fovh_degrees = 74.0f;
+        fovv_degrees = 62.0f;
+
+        // Realsense D435 = 1000 ; TUM dataset = 1 (5000 in their website and also 16bit) for the rosbag it seems 32bit and
+        // scale of 1
+        depth_pixel_scale = 1000;
+    }
 
     rows_orig = 480;
     cols_orig = 640;
 
-    // Realsense D435 = 1000 ; TUM dataset = 1 (5000 in their website and also 16bit) for the rosbag it seems 32bit and
-    // scale of 1
-    depth_pixel_scale = 1;
-
-    min_depth_value_filter = 0.5f;
-    max_depth_value_filter = 4.5f;
+    min_depth_value_filter = 0.1f;
+    max_depth_value_filter = 7.0f;
 
     /**
      * The number of times we want to downsample the original resolution.
@@ -228,13 +257,6 @@ void CROSDifodo::loadInnerConfiguration() {
 
     rows_ctf = rows_orig / downsample;
     cols_ctf = cols_orig / downsample;
-
-    // Realsense D435 = 74.0f ; TUM dataset = 58.5;
-//    fovh_degrees = 74.0f;
-    fovh_degrees = 58.5f;
-    // Realsense D435 = 62.0f ; TUM dataset = 46.6;
-//    fovv_degrees = 62.0f;
-    fovv_degrees = 46.6f;
 
     // NOTE: I dont know why but if set to true, the algorithm doesnt work...
     fast_pyramid = false;
@@ -259,7 +281,8 @@ void CROSDifodo::loadInnerConfiguration() {
                               "ctf_levels " << ctf_levels << std::endl <<
                               "fovh_degrees: " << fovh_degrees << std::endl <<
                               "fovv_degrees: " << fovv_degrees << std::endl <<
-                              "fast_pyramid: " << fast_pyramid << std::endl);
+                              "fast_pyramid: " << fast_pyramid << std::endl <<
+                              "use_depth_images_timestamp: " << use_depth_images_timestamp << std::endl);
 
     /******************SET DIFODO ATTRIBUTES VALUES*****************/
     this->fovh = M_PI * fovh_degrees / 180.0;
@@ -608,7 +631,13 @@ void CROSDifodo::publishOdometryMsgs(double pos_x, double pos_y, double pos_z,
     odom_broadcaster.sendTransform(odom_trans);
 
     // ********************PUBLISHING THE ODOMETRY MESSAGE IN ROS********************
-    nav_msgs::Odometry odom_msg = createOdometryMsg(pos_x, pos_y, pos_z, roll, pitch, yaw, current_time);
+    nav_msgs::Odometry odom_msg;
+    if (use_depth_images_timestamp) {
+        odom_msg = createOdometryMsg(pos_x, pos_y, pos_z, roll, pitch, yaw, this->last_depth_image_time);
+    } else {
+        odom_msg = createOdometryMsg(pos_x, pos_y, pos_z, roll, pitch, yaw, current_time);
+    }
+
     //Publish the message
     this->odom_publisher.publish(odom_msg);
 }

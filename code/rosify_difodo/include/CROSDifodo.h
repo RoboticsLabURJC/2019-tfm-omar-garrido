@@ -221,6 +221,13 @@ private:
     ros::Time last_depth_image_time;
 
     /**
+     * If true this will use the depth images timestamp for the odometry timestamp message that is being publish instead
+     * of the current timestamp. Useful when we are using a dataset with a groundtruth that has the old timestamps
+     * (like RGBD TUM dataset)
+     */
+    bool use_depth_images_timestamp;
+
+    /**
      * Output file stream
      */
     std::ofstream output_file;
