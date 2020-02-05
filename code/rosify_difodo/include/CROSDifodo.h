@@ -228,12 +228,6 @@ private:
     bool use_depth_images_timestamp;
 
     /**
-     * Output file stream
-     */
-    std::ofstream output_file;
-
-
-    /**
      * Executes the difodo algorithm in a loop until is cancelled
      */
     void run_difodo();

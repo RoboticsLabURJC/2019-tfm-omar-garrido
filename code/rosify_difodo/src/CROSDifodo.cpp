@@ -50,24 +50,9 @@ CROSDifodo::CROSDifodo() : mrpt::vision::CDifodo() {
     last_execution_time = (double) cv::getTickCount();
 
     use_depth_images_timestamp = false;
-
-
-    time_t now = time(NULL);
-    struct tm tstruct;
-    char buf[40];
-    tstruct = *localtime(&now);
-    //format: day DD-MM-YYYY
-    strftime(buf, sizeof(buf), "%d_%m_%Y-%H_%M_%S", &tstruct);
-    std::string filename = std::string(buf) + "_rosify_difodo_odom_output.txt";
-    output_file.open(filename);
-    if (!output_file) {
-        ROS_ERROR_STREAM("Output file couldn be created");
-        exit(-1);
-    }
 }
 
 CROSDifodo::~CROSDifodo() {
-    if (output_file.is_open()) output_file.close();
 }
 
 void CROSDifodo::loadConfiguration() {
@@ -722,27 +707,6 @@ void CROSDifodo::execute_iteration() {
     // 4. Publish the odometry messages and transforms.
     this->publishOdometryMsgs(this->cam_pose.x(), this->cam_pose.y(), this->cam_pose.z(),
                               this->cam_pose.roll(), this->cam_pose.pitch(), this->cam_pose.yaw());
-
-    // 5. Write the output to the output file.
-    if (!first_iteration) {
-        if (output_file.is_open())
-        {
-            tf2::Quaternion quat_tf;
-            quat_tf.setRPY(cam_pose.roll(), cam_pose.pitch(), cam_pose.yaw());
-
-            //https://www.quora.com/How-do-I-customize-cout-in-C++-to-print-n-digit-after-the-decimal-point-of-a-floating-point
-            output_file << std::fixed <<  std::setprecision(4) \
-                        << current_depth_image_time.toSec() << " " \
-                        << cam_pose.x() << " " \
-                        << cam_pose.y() << " " \
-                        << cam_pose.z() << " " \
-                        << quat_tf.x() << " " \
-                        << quat_tf.y() << " " \
-                        << quat_tf.z() << " " \
-                        << quat_tf.w() << " " \
-                        << std::endl;
-        }
-    }
 
     if (first_iteration) first_iteration = false;
 }
