@@ -24,7 +24,7 @@ The latest version of **Rosify Difodo** has been tested and is currently working
 
 ### CMake
 In order to compile and install the vast majority of C++ based softwares CMake is widely used.
-Everythin has been tested with **version 3.10.2**.
+Everything has been tested with **version 3.10.2**.
 Also lower version will work we recommend to have the latest cmake version for your OS since a lot of packages depend on it to be installed.
 
 ### OpenCV
@@ -277,6 +277,112 @@ Once the odometry is add, go to  **Odometry->Topic** and select the desired odom
 To be able to see the algorithm update properly set the properties **Position Tolerance** and **Angle Tolerance** to 0.01 instead of 0.1, that way the pose will be update on the display with changes of 0.01m instead of 0.1m. The changes will be smoother. Also is good to set **Keep** propery to 1 if you only want to see the current position and not a trajectory.
 
 Also I recommend to suscribe and add the topics depth images and color images, so one can appreciate the movement within the images also.
+
+# 2. odometry_evaluation_file_creator
+Check the instrucctions and get the code from [https://github.com/RoboticsLabURJC/2019-tfm-omar-garrido/tree/master/code/odometry_evaluation_file_creator](https://github.com/RoboticsLabURJC/2019-tfm-omar-garrido/tree/master/code/odometry_evaluation_file_creator)
+
+## Requisites
+The latest version of **odometry_evaluation_file_creator** has been tested and is currently working on Ubuntu 18.04 LTS but it should work on other platforms. It has been tested with latest [ros-melodic](http://wiki.ros.org/melodic).
+It should work with other ros versions like **ros-kinetics and Ubuntu 16.04** but havent been tested yet.
+
+**Note: ros-melodic only supports officially Ubuntu 18.04 while ros-kinetics supports only Ubuntu 16.04**
+
+### CMake
+In order to compile and install the vast majority of C++ based softwares CMake is widely used.
+Everything has been tested with **version 3.10.2**.
+Also lower version will work we recommend to have the latest cmake version for your OS since a lot of packages depend on it to be installed.
+
+### OpenCV
+When installing ROS also an OpenCV version is installed in the system. We recommend to use that since it wont give you any headache. But you can always build your OpenCV version and the build ROS from sources.
+Ros-melodic comes with OpenCV 3.2.0
+
+### ROS
+- If your are using Ubuntu 18.04 install latest ros-melodic following the [official instructions](http://wiki.ros.org/melodic/Installation/Ubuntu).
+- **(NOT WORKING)** If your are using Ubuntu 16.04 is better to install ros-kinetics from [official instructions](http://wiki.ros.org/kinetic/Installation/Ubuntu).
+
+**Also you can always try to compile ros from sources in your desired Ubuntu version we do not recommend it.**
+
+
+## Install as a ros package
+**First get the code from github:**
+```
+git clone https://github.com/RoboticsLabURJC/2019-tfm-omar-garrido.git
+```
+
+**Move or copy the package to a catking workspace or your ros workspace**
+In my case:
+```
+cp -r odometry_evaluation_file_creator/ ~/Programs/catkin_ws/src/
+```
+
+If you dont know where your catkin workspace is or you havent created one:
+- See the [section](https://roboticslaburjc.github.io/2019-tfm-omar-garrido/entries/entry9/#creating-a-launch-file).
+- [Create a catkin workspace](http://wiki.ros.org/catkin/Tutorials/create_a_workspace)
+
+**To see if the package has been correctly install and is being recognized:**
+```
+rospack list | grep -i odometry_evaluation_file_creator
+```
+This command should return the **odometry_evaluation_file_creator** package and its location.
+
+**Build the application, generate the binary node**
+```
+# Go to your catkin_ws root.
+cd  ~/Programs/catkin_ws
+# Build
+catkin_make
+```
+
+The command **catkin_make** will build the packages within your catkin workspace. In order to just generate the desired package:
+```
+# Once this in done, from now on only this package will be build even with catkin_make
+catkin_make --only-pkg-with-deps odometry_evaluation_file_creator
+# Be sure to do this to be able to build again all the packages
+catkin_make -DCATKIN_WHITELIST_PACKAGES=""
+```
+
+To see other options to build packages and manage catkin see this [answer](https://answers.ros.org/question/54178/how-to-build-just-one-package-using-catkin_make/) that also uses:
+
+```
+sudo apt-get install python-catkin-tools
+```
+
+**All the code above in just one code block for copy paste:**
+```
+git clone https://github.com/RoboticsLabURJC/2019-tfm-omar-garrido.git
+cp -r odometry_evaluation_file_creator/ ~/Programs/catkin_ws/src/
+cd  ~/Programs/catkin_ws
+catkin_make --only-pkg-with-deps odometry_evaluation_file_creator
+catkin_make -DCATKIN_WHITELIST_PACKAGES=""
+```
+
+## Usage
+
+```
+# For rosify_difodo
+roslaunch odometry_evaluation_file_creator TUM_dataset_rosify_difodo.launch.launch
+
+# For SD-SLAM
+
+roslaunch odometry_evaluation_file_creator TUM_dataset_sdslam.launch.launch
+```
+
+## Configuration parameters
+To configure the package we have the following parameters that are within an YAML file:
+- **odometry_topic**: The odometry topic we want to subscribe to. Eg: /sdslam/odometry
+- **source_frame**: The source frame of the tf. The frame from which we want to transform, camera center in this case. Eg: openni_camera
+- **target_frame**: The target frame that we want to transform to. The absolute reference system, the world. Eg world
+- **output_file_dir**: A path to a directory where the output files will be stored.
+
+## Launch files
+There are a few launch files which also set some parameters, here is a brief summary of them:
+
+**TUM_dataset_rosify_difodo.launch**
+This launch files is intended to be used with rosify_difodo. It loads the configuration YAML from odometry_evaluation_file_creator/launch/config/rosify_difodo_evaluator_config.yaml
+
+**TUM_dataset_sdslam.launch**
+This launch files is intended to be used with SD-SLAM. It loads the configuration YAML from odometry_evaluation_file_creator/launch/config/sdslam_evaluator_config.yaml
+
 
 # TODO (Things that I still have to worked on):
 
