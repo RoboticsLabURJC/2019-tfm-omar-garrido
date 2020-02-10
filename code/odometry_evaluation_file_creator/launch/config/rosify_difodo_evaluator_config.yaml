@@ -1,0 +1,7 @@
+%YAML 1.0
+---
+odometry_topic: /difodo/odom
+source_frame: openni_camera
+target_frame: world
+output_file_dir: /home/omar/Documents
+
