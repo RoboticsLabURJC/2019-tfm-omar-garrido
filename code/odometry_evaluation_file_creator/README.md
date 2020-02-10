@@ -1,4 +1,7 @@
 # odometry_evaluation_file_creator
+
+More detailed instrucions to install and usage on [instructions](https://roboticslaburjc.github.io/2019-tfm-omar-garrido/install/#2-odometry-evaluation-file-creator).
+
 ```
 # For rosify_difodo
 roslaunch odometry_evaluation_file_creator TUM_dataset_rosify_difodo.launch.launch
@@ -23,12 +26,10 @@ To configure the package we have the following parameters that are within an YAM
 
 
 ## How to install
-To install this node you can follow basically the same [instructions required for rosify_difofo](https://roboticslaburjc.github.io/2019-tfm-omar-garrido/install/#1-rosify-difodo).
-The only differences regarding requisites with rosify_difodo is that this package doesnt require MRPT.
+To install this node you can follow the instructions from [instructions](https://roboticslaburjc.github.io/2019-tfm-omar-garrido/install/#2-odometry-evaluation-file-creator).
+The only differences regarding requisites with rosify_difodo is that this package doesnt require MRPT. (So if you have installed rosify_difodo no more requirements are needed)
 
 To install it can be done as a ROS package or with CMake. I recommend to do it as a ROS package to use the launch files provided.
-
-The instructions to install are the same as with rosify_difodo: https://roboticslaburjc.github.io/2019-tfm-omar-garrido/install/#install-as-a-ros-package
 
 ```
 git clone https://github.com/RoboticsLabURJC/2019-tfm-omar-garrido.git
@@ -49,6 +50,8 @@ catkin_make -DCATKIN_WHITELIST_PACKAGES=""
 
 
 ## How to use
+Check [official instructions to see more details of this section](https://roboticslaburjc.github.io/2019-tfm-omar-garrido/install/#2-odometry-evaluation-file-creator).
+
 Use the launch files provided within the package. I provided two launch files:
 
 **TUM_dataset_rosify_difodo.launch**
