@@ -1,0 +1,10 @@
+<!--
+THIS LAUNCH FILE WILL START THE REALSENSE CAMERA WITH THE DEFAULT PARAMETERS
+AND THEN THE DIFODO ALGORITHM
+-->
+
+<launch>
+    <!--First launch the realsense camera-->
+    <include file="$(find odometry_evaluation_file_creator)/launch/TUM_dataset_rosify_difodo.launch" />
+    <include file="$(find rosify_difodo)/launch/ros_difodo_TUM.launch" />
+</launch>
