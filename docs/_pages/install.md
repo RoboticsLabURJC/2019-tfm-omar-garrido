@@ -384,6 +384,29 @@ This launch files is intended to be used with rosify_difodo. It loads the config
 This launch files is intended to be used with SD-SLAM. It loads the configuration YAML from odometry_evaluation_file_creator/launch/config/sdslam_evaluator_config.yaml
 
 
+# 3. SD-SLAM
+[SD-SLAM](https://github.com/JdeRobot/SDslam) is one of the best visual SLAM algorithms up to date. Since the goal of this project is to fuse SD-SLAM along with rosdify_difodo Ill provide here the instructions to use SD-SLAM
+
+## Installation
+See the instructions on https://github.com/JdeRobot/SDslam
+
+
+## Usage
+
+### Running SD-SLAM RGBD node with roslaunch
+Several launch files has been provided so the node RGBD can be run with those.
+In order to run SD-SLAM with the configuration for TUM freidburg1 sequences run
+
+```
+roslaunch SD-SLAM sdslam_TUM1.launch
+```
+
+In order to run SD-SLAM with the configuration for TUM freidburg1 sequences and odometry_evaluation_file_creation to create a groundtruth file that can be compare with the groundtruths of TUM
+
+```
+roslaunch SD-SLAM sdslam_TUM1_evaluation_file.launch
+```
+
 # TODO (Things that I still have to worked on):
 
 - [ ] CHECK how to properly change depth FPS for realsense since now my attemps hasnt been successful.
