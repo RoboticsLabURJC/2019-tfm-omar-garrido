@@ -26,7 +26,7 @@ int main(int argc, char **argv) {
         ROS_INFO_STREAM("Using internal rosify_difodo config instead of launch file");
         ros_difodo.loadInnerConfiguration();
     } else {
-        ROS_INFO_STREAM("Using internal rosify_difodo config instead of launch file");
+        ROS_INFO_STREAM("Using launch file config instead of default inner config");
         ros_difodo.loadConfiguration();
     }
 
