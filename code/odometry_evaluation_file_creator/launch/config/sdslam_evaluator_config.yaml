@@ -3,5 +3,5 @@
 odometry_topic: /sdslam/odom
 source_frame: openni_camera
 target_frame: world
-output_file_dir: /home/omar/Documents
+output_file_dir: /home/omar/Documents/evaluation_files/SD-SLAM
 
