@@ -176,7 +176,7 @@ Also the realsense node has been integrated so if you want to change any paramet
 **Changing frequency of depth**
 Realsense can operate on different FPS for different resolutions use command **rs-enumerate-devices** to see available resolutions and FPS.
 
-The default resolution is 30FPS, to change the resolution that the camera send information you will have to change the launch file or overwrite like this the desired value:
+The default resolution is 30FPS, to change the resolution that the camera send information you will have to change ```the launch file or overwrite like this the desired value:
 
 ```
 roslaunch realsense2_camera rs_rgbd.launch depth_fps:=60
@@ -194,6 +194,17 @@ roslaunch rosify_difodo ros_difodo_and_realsense.launch.launch camera_fps:=60 de
 
 Another interesting parameter to change is **working\_fps** in the ros_difodo.launch.
 This parameter controls the maximum speed at what difodo works. (If hardware doesnt allow to work at that speed it will simply work at the maximum otherwise it will work at the specified rate and publish messages at that frequency)
+
+
+### TUM dataset plus odometry_evaluation_file_creator
+
+[Fully explain here.](https://roboticslaburjc.github.io/2019-tfm-omar-garrido/entries/entry14/#rosify_difodo-1) If what you would like to do is test this algorithm against a sequence of TUM RGBD dataset, do this and then play the rosbag sequence of the dataset:
+```
+roslaunch rosify_difodo ros_difodo_TUM_evaluation_file.launch
+```
+
+With this you will be running rosify_difodo and odometry_evaluation_file_creator, both configured to work together and with TUM dataset, creating a groundtruth that can be used for comparison later.
+
 
 ## Launch files and parameters
 There are a few launch files which also set some parameters, here is a brief summary of them:
@@ -229,6 +240,8 @@ The same as the previous but it will start the local rs_rgbd.launch within ros_d
 ### rs_rgbd.launch
 A copy of the original rs_rgbd.launch from realsense2_camera. Use to change parameters without modifying the original launch file.
 
+### ros_difodo_TUM_evaluation_file
+Runs rosify_difodo and odometry_evaluation_file_creator, both configured to work together and with TUM dataset, creating a groundtruth that can be used for comparison later.
 
 
 ### Information visualization: Logs, topics...
