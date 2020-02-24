@@ -10,6 +10,7 @@ from evo.tools import file_interface
 from evo.core import sync
 from evo.core import trajectory
 from evo.core import metrics
+from evo.core.geometry import GeometryException
 
 def compare_using_APE(ref_file, est_file, use_aligned_trajectories=False):
     """
@@ -27,9 +28,6 @@ def compare_using_APE(ref_file, est_file, use_aligned_trajectories=False):
     max_diff = 0.01
     traj_ref, traj_est = sync.associate_trajectories(traj_ref, traj_est, max_diff)
 
-    # Align trajectories with Uleyamas algorithm
-    traj_est_aligned = trajectory.align_trajectory(traj_est, traj_ref, correct_scale=False, correct_only_scale=False)
-
     # -------------EVO_APE-------------
     # Settings
     pose_relation = metrics.PoseRelation.translation_part
@@ -37,7 +35,14 @@ def compare_using_APE(ref_file, est_file, use_aligned_trajectories=False):
 
     # The aligned trajectories can be used if we want it to
     if use_aligned_trajectories:
-        data = (traj_ref, traj_est_aligned)
+        # Align trajectories with Uleyamas algorithm
+        try:
+            traj_est_aligned = trajectory.align_trajectory(traj_est, traj_ref, correct_scale=False,
+                                                           correct_only_scale=False)
+            data = (traj_ref, traj_est_aligned)
+        except GeometryException:
+            print("Couldnt align with Uleyamas algorithm...")
+            data = (traj_ref, traj_est)
     else:
         data = (traj_ref, traj_est)
 
